@@ -59,34 +59,37 @@ Chess/
 
 ## Getting Started
 
-### Build (Windows with MinGW)
+## Build Instructions
+
+### Clone the Repository
 
 ```bash
-# Clone the repo
 git clone https://github.com/CrimsonOptimal355/Chess-CPP-SFML.git
 cd Chess-CPP-SFML
+```
 
-# Update CMakeLists.txt SFML_DIR path to your local SFML installation
-# Then configure and build
-mkdir build && cd build
+### Configure and Build
+
+```bash
+mkdir build
+cd build
+
 cmake .. -G "MinGW Makefiles"
+
 cmake --build .
 ```
 
-### Running the Game
+> Before building, update the `SFML_DIR` path in `CMakeLists.txt` to point to your local SFML 3.0 installation.
 
-After building, copy the compiled executable into the `bin/` directory alongside the SFML DLLs and assets, then run it from there:
+### Run the Game
+
+After building, run the executable from the project root directory so the relative asset paths work correctly.
 
 ```bash
-# Copy the built executable to bin/
-cp build/Chess.exe bin/
-
-# Run from bin/ so assets are found at the correct relative paths
-cd bin
 ./Chess.exe
 ```
 
-> The `bin/` folder already contains the required SFML `.dll` files and `assets/` folder. The executable must be run from this directory.
+> **Important:** The executable must be run with the `assets/` folder available in the same directory.
 
 ---
 
