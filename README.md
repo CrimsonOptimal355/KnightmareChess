@@ -28,6 +28,14 @@
 
 ---
 
+## Screenshots
+
+| Gameplay & Move History | Checkmate Detection | King in Check |
+|---|---|---|
+| ![Gameplay](assets/screenshots/gameplay.png) | ![Checkmate](assets/screenshots/checkmate.png) | ![Check](assets/screenshots/check.png) |
+
+---
+
 ## Project Structure
 
 ```
@@ -48,7 +56,8 @@ Chess/
 ├── assets/
 │   ├── textures/         # PNG piece sprites (wp, wk, wq, ... bp, bk, bq ...)
 │   ├── sounds/           # MP3 sound effects (move, capture, castle, check, checkmate)
-│   └── fonts/            # UbuntuMono-Regular.ttf
+│   ├── fonts/            # UbuntuMono-Regular.ttf
+│   └── screenshots/      # Game screenshots
 ├── tools/                # Linting and formatting configs
 ├── .github/workflows/    # CI pipelines (Windows, Ubuntu, macOS, Docs)
 └── CMakeLists.txt
