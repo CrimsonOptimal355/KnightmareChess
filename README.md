@@ -81,14 +81,18 @@ cmake --build .
 
 ### Running the Game
 
-After building, run the executable from the `bin/` directory (so assets are found at the correct relative paths):
+After building, copy the compiled executable into the `bin/` directory alongside the SFML DLLs and assets, then run it from there:
 
 ```bash
+# Copy the built executable to bin/
+cp build/Chess.exe bin/
+
+# Run from bin/ so assets are found at the correct relative paths
 cd bin
 ./Chess.exe
 ```
 
-> Make sure the SFML `.dll` files are in the same directory as the executable.
+> The `bin/` folder already contains the required SFML `.dll` files and `assets/` folder. The executable must be run from this directory.
 
 ---
 
