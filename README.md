@@ -119,22 +119,13 @@ Before building the project, make sure you have:
   - Clang
   - MSVC
 - **CMake** 3.15 or higher
-- **SFML 3.0** installed — [Download here](https://www.sfml-dev.org/download/)
+- **SFML 3.0** — Windowing, graphics, audio — [Download here](https://www.sfml-dev.org/download/)
 
 ### Tested On
 
 | OS | Compiler | SFML |
 |---|---|---|
 | Windows 11 | MinGW-w64 | 3.0 |
-
----
-
-## Dependencies
-
-| Library | Version | Purpose |
-|---|---|---|
-| [SFML](https://www.sfml-dev.org/) | 3.0 | Windowing, graphics, audio |
-| CMake | 3.15+ | Build system |
 
 ---
 
