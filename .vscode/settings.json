@@ -1,0 +1,24 @@
+{
+    "C_Cpp.default.compilerPath": "C:/mingw64/bin/g++.exe",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/New/Practice/External/SFML-MinGW/SFML-3.0.0/include",
+        "C:/mingw64/include/c++/12.1.0",
+        "C:/mingw64/include/c++/12.1.0/x86_64-w64-mingw32",
+        "C:/mingw64/include/c++/12.1.0/backward",
+        "C:/mingw64/lib/gcc/x86_64-w64-mingw32/12.1.0/include",
+        "C:/mingw64/include",
+        "C:/mingw64/lib/gcc/x86_64-w64-mingw32/12.1.0/include-fixed",
+        "C:/mingw64/x86_64-w64-mingw32/include"
+    ],
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.default.intelliSenseMode": "windows-gcc-x64",
+    "C_Cpp.codeAnalysis.runAutomatically": false,
+    "C_Cpp.codeAnalysis.clangTidy.enabled": false,
+    "C_Cpp.default.compilerArgs": [
+        "-w"
+    ],
+    "C_Cpp.errorSquiggles": "disabled"
+}

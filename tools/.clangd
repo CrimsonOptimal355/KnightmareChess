@@ -1,0 +1,9 @@
+CompileFlags:
+  Add:
+    - "-ID:/CPP/Chess/include"
+    - "-ID:/CPP/Chess/New/Practice/External/SFML-MinGW/SFML-3.0.0/include"
+    - "-std=c++17"
+    - "-w"
+Diagnostics:
+  ClangTidy:
+    Remove: ["*"]
