@@ -24,7 +24,7 @@
 - **Last Move Highlighting** — The previous move's start and end squares are highlighted in yellow
 - **Move History Notation** — Algebraic-style move log displayed alongside the board
 - **Sound Effects** — Distinct sounds for move, capture, castle, check, and checkmate
-- **Restart / Rematch / Exit** — In-game buttons to restart at any time or after game over
+- **Restart** — In-game button to reset the board at any time
 
 ---
 
@@ -101,7 +101,6 @@ After building, run the executable from the project root directory so the relati
 | Move a piece | Left click on a highlighted destination dot |
 | Deselect | Click an invalid square |
 | Restart | Click the **Restart** button (left of the board) |
-| Rematch / Exit | Use buttons on the game-over screen |
 
 - **White** pieces (uppercase) always move first.
 - Valid moves are shown as **grey dots** after selecting a piece.
