@@ -59,12 +59,6 @@ Chess/
 
 ## Getting Started
 
-### Prerequisites
-
-- **C++17** compatible compiler (MSVC, GCC, Clang)
-- **CMake** 3.15+
-- **SFML 3.0** — [Download here](https://www.sfml-dev.org/download/)
-
 ### Build (Windows with MinGW)
 
 ```bash
@@ -113,12 +107,39 @@ cd bin
 
 ---
 
+## Requirements
+
+Before building the project, make sure you have:
+
+- **C++17** compatible compiler
+  - GCC (MinGW-w64 recommended on Windows)
+  - Clang
+  - MSVC
+- **CMake** 3.15 or higher
+- **SFML 3.0** installed — [Download here](https://www.sfml-dev.org/download/)
+
+### Tested On
+
+| OS | Compiler | SFML |
+|---|---|---|
+| Windows 11 | MinGW-w64 | 3.0 |
+
+---
+
 ## Dependencies
 
 | Library | Version | Purpose |
 |---|---|---|
 | [SFML](https://www.sfml-dev.org/) | 3.0 | Windowing, graphics, audio |
 | CMake | 3.15+ | Build system |
+
+---
+
+## Future Scope
+
+- 🤖 **AI Opponent (Minimax)** — Single-player mode with a computer opponent using the Minimax algorithm with alpha-beta pruning
+- 🖱️ **Drag-and-Drop Movement** — Intuitive piece dragging instead of click-to-move
+- 🎨 **Board Themes** — Switchable board and piece themes for a personalized look
 
 ---
 
