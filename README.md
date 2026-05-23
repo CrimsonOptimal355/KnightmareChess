@@ -49,7 +49,6 @@ Chess/
 │   ├── textures/         # PNG piece sprites (wp, wk, wq, ... bp, bk, bq ...)
 │   ├── sounds/           # MP3 sound effects (move, capture, castle, check, checkmate)
 │   └── fonts/            # UbuntuMono-Regular.ttf
-├── bin/                  # Compiled executable + SFML DLLs (Windows)
 ├── tools/                # Linting and formatting configs
 ├── .github/workflows/    # CI pipelines (Windows, Ubuntu, macOS, Docs)
 └── CMakeLists.txt
@@ -71,12 +70,8 @@ cd Chess-CPP-SFML
 ### Configure and Build
 
 ```bash
-mkdir build
-cd build
-
-cmake .. -G "MinGW Makefiles"
-
-cmake --build .
+cmake -S . -B build -G "MinGW Makefiles"
+cmake --build build
 ```
 
 > Before building, update the `SFML_DIR` path in `CMakeLists.txt` to point to your local SFML 3.0 installation.
