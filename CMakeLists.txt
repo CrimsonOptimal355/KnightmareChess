@@ -22,7 +22,7 @@ add_executable(Chess ${SOURCES})
 # Link SFML and system libraries
 target_link_libraries(Chess PRIVATE SFML::Graphics SFML::Window SFML::System SFML::Audio)
 
-# Copy SFML DLLs to the output directory on Windows after build
+# Copy SFML DLLs and assets to the output directory on Windows after build
 if(WIN32)
     add_custom_command(TARGET Chess POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -30,3 +30,10 @@ if(WIN32)
         $<TARGET_FILE_DIR:Chess>
     )
 endif()
+
+# Copy assets folder to output directory after build
+add_custom_command(TARGET Chess POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    "$<TARGET_FILE_DIR:Chess>/assets"
+)

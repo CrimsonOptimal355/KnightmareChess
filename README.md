@@ -89,13 +89,14 @@ cmake --build build
 
 ### Run the Game
 
-After building, run the executable from the project root directory so the relative asset paths work correctly.
+After building, run the executable directly from the `build/` folder — assets and DLLs are automatically copied there by CMake:
 
 ```bash
+cd build
 ./Chess.exe
 ```
 
-> **Important:** The executable must be run with the `assets/` folder available in the same directory.
+> The `assets/` folder and SFML DLLs are automatically copied into `build/` after every successful build.
 
 ---
 
