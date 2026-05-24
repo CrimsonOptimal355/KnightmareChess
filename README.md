@@ -67,7 +67,24 @@ Chess/
 
 ---
 
-## Getting Started
+## Requirements
+
+Before building the project, make sure you have:
+
+- **C++17** compatible compiler
+  - GCC (MinGW-w64 recommended on Windows)
+  - Clang
+  - MSVC
+- **CMake** 3.15 or higher
+- **SFML 3.1.0** — Already bundled in `external/` — no separate download needed ✅
+
+### Tested On
+
+| OS | Compiler | SFML |
+|---|---|---|
+| Windows 11 | MinGW-w64 | 3.1.0 (bundled) |
+
+---
 
 ## Build Instructions
 
@@ -113,25 +130,6 @@ cd build
 - Valid moves are shown as **grey dots** after selecting a piece.
 - The **king's square turns red** when in check.
 - The game ends automatically on **checkmate** or **stalemate**.
-
----
-
-## Requirements
-
-Before building the project, make sure you have:
-
-- **C++17** compatible compiler
-  - GCC (MinGW-w64 recommended on Windows)
-  - Clang
-  - MSVC
-- **CMake** 3.15 or higher
-- **SFML 3.1.0** — Already bundled in `external/` — no separate download needed ✅
-
-### Tested On
-
-| OS | Compiler | SFML |
-|---|---|---|
-| Windows 11 | MinGW-w64 | 3.1.0 (bundled) |
 
 ---
 
