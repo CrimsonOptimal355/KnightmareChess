@@ -110,7 +110,7 @@ After building, run the executable directly from the `build/` folder — assets 
 
 ```bash
 cd build
-./Chess.exe
+Chess.exe
 ```
 
 > The `assets/` folder and SFML DLLs are automatically copied into `build/` after every successful build.
