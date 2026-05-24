@@ -58,6 +58,8 @@ Chess/
 │   ├── sounds/           # MP3 sound effects (move, capture, castle, check, checkmate)
 │   ├── fonts/            # UbuntuMono-Regular.ttf
 │   └── screenshots/      # Game screenshots
+├── external/
+│   └── SFML-3.1.0/       # Bundled SFML (bin/, include/, lib/)
 ├── tools/                # Linting and formatting configs
 ├── .github/workflows/    # CI pipelines (Windows, Ubuntu, macOS, Docs)
 └── CMakeLists.txt
@@ -83,7 +85,7 @@ cmake -S . -B build -G "MinGW Makefiles"
 cmake --build build
 ```
 
-> Before building, update the `SFML_DIR` path in `CMakeLists.txt` to point to your local SFML 3.0 installation.
+> SFML is already bundled in `external/` — no additional setup needed.
 
 ### Run the Game
 
@@ -122,13 +124,13 @@ Before building the project, make sure you have:
   - Clang
   - MSVC
 - **CMake** 3.15 or higher
-- **SFML 3.0** — Windowing, graphics, audio — [Download here](https://www.sfml-dev.org/download/)
+- **SFML 3.1.0** — Already bundled in `external/` — no separate download needed ✅
 
 ### Tested On
 
 | OS | Compiler | SFML |
 |---|---|---|
-| Windows 11 | MinGW-w64 | 3.0 |
+| Windows 11 | MinGW-w64 | 3.1.0 (bundled) |
 
 ---
 
