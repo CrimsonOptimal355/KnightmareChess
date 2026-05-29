@@ -5,3 +5,4 @@ bin/*.dll
 src/build/
 *.obj
 *.o
+.vscode/
