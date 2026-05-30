@@ -54,3 +54,6 @@ void displayBoard()
         std::cout << std::endl;
     }
 }
+bool enPassantAvailable = false;
+int enPassantRow = -1;
+int enPassantCol = -1;
