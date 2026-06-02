@@ -552,6 +552,7 @@ int main() {
                     }
 
                     moveHistory.push_back(move);
+                    std::cout << "Evaluation: " << evaluateBoard() << '\n';
                     {
                       int tp = ((int)moveHistory.size() + 1) / 2;
                       int mv = static_cast<int>(totalGridHeight / 35.f);
@@ -622,7 +623,7 @@ int main() {
       }
     }
     window.clear();
-    displayBoard();
+    // displayBoard();
     // Main Menu
     if (showMainMenu) {
       window.draw(pvpButton);

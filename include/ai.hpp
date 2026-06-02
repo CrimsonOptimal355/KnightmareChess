@@ -4,3 +4,4 @@
 
 std::vector<Move> getAllLegalMoves(bool forWhite);
 Move getRandomMove(bool forWhite);
+int evaluateBoard();
