@@ -6,6 +6,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <vector>
 
 bool isValidPawnMove(int startRow, int startCol, int endRow, int endCol,
                      char sourcepiece, char targetpiece) {
@@ -192,7 +193,6 @@ bool isAnyLegalMove(bool whiteTurn) {
     for (int sCol = 0; sCol < 8; sCol++) {
       char piece = board[sRow][sCol];
 
-      // skip empty
       if (piece == '.' || (whiteTurn ? !isWhite(piece) : !isBlack(piece)))
         continue;
 
@@ -200,28 +200,24 @@ bool isAnyLegalMove(bool whiteTurn) {
         for (int eCol = 0; eCol < 8; eCol++) {
           char target = board[eRow][eCol];
 
-          // Not Attack on own piece
           if (target != '.' && (isWhite(piece) == isWhite(target)))
             continue;
 
-          // Different attack for each piece
-          bool validMove = false;
-          char type = std::tolower(piece);
-
-          validMove = isValidMove(sRow, sCol, eRow, eCol, piece, target);
-
-          if (!validMove)
+          if (!isValidMove(sRow, sCol, eRow, eCol, piece, target))
             continue;
 
-          // Temp Move
-          board[eRow][eCol] = piece;
-          board[sRow][sCol] = '.';
+          Move move;
+          move.startRow = sRow;
+          move.startCol = sCol;
+          move.endRow = eRow;
+          move.endCol = eCol;
+          move.movedPiece = piece;
+          move.capturedPiece = target;
+          move.wasEnPassant = false;
 
+          makeMove(move);
           bool kingUnsafe = isKingInCheck(whiteTurn);
-
-          // Reverse
-          board[sRow][sCol] = piece;
-          board[eRow][eCol] = target;
+          undoMove(move);
 
           if (!kingUnsafe)
             return true;
@@ -352,7 +348,19 @@ bool isValidCastling(int startRow, int startCol, int endRow, int endCol,
 
   return false;
 }
+
+namespace {
+bool isInsideBoard(int row, int col) {
+  return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+} // namespace
+
 void makeMove(Move &move) {
+  if (!isInsideBoard(move.startRow, move.startCol) ||
+      !isInsideBoard(move.endRow, move.endCol)) {
+    return;
+  }
+
   move.wasEnPassant = false;
   move.prevEnPassantAvailable = enPassantAvailable;
   move.prevEnPassantRow = enPassantRow;
@@ -390,6 +398,11 @@ void makeMove(Move &move) {
   }
 }
 void undoMove(const Move &move) {
+  if (!isInsideBoard(move.startRow, move.startCol) ||
+      !isInsideBoard(move.endRow, move.endCol)) {
+    return;
+  }
+
   board[move.startRow][move.startCol] = move.movedPiece;
   board[move.endRow][move.endCol] = move.capturedPiece;
 
@@ -441,4 +454,9 @@ std::string moveToNotation(const Move &move) {
   notation += char('8' - move.endRow);
 
   return notation;
+}
+std::vector<Move> generateLegalMoves(bool whiteTurn) {
+  std::vector<Move> legalMoves;
+
+  return legalMoves;
 }

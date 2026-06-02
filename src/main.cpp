@@ -2,8 +2,12 @@
 #include "Board.hpp"
 #include "Move.hpp"
 #include "MoveStruct.hpp"
+#include "ai.hpp"
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <vector>
 
@@ -24,6 +28,7 @@ void loadSound(sf::SoundBuffer &Buffer, const std::string &path) {
 }
 
 int main() {
+  srand(time(0));
   // Printing Board on Console
   displayBoard();
 
@@ -207,6 +212,8 @@ int main() {
   bool promotionWhite = true;
   int promotionRow = -1;
   int promotionCol = -1;
+  bool aiMovePending = false;
+  int ScrollHistory = 0;
 
   std::string gameResult = "";
 
@@ -218,6 +225,19 @@ int main() {
     while (auto event = window.pollEvent()) {
       if (event->is<sf::Event::Closed>()) {
         window.close();
+      }
+      if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>()) {
+        if (scroll->wheel == sf::Mouse::Wheel::Vertical) {
+          int totalPairs = ((int)moveHistory.size() + 1) / 2;
+          int maxVisible = static_cast<int>(totalGridHeight / 35.f);
+
+          if (scroll->delta < 0) {
+            ScrollHistory = std::min(ScrollHistory + 1,
+                                     std::max(0, totalPairs - maxVisible));
+          } else {
+            ScrollHistory = std::max(ScrollHistory - 1, 0);
+          }
+        }
       }
       // Selction on Mouse Click
       if (const auto *mouseClick =
@@ -318,6 +338,8 @@ int main() {
             blackRightRookMoved = false;
             showMainMenu = true;
             gameMode = GameMode::None;
+            aiMovePending = false;
+            ScrollHistory = 0;
           }
           if (gameOver && exitButton.getGlobalBounds().contains(mousePos)) {
             window.close();
@@ -363,8 +385,9 @@ int main() {
             blackLeftRookMoved = false;
             blackRightRookMoved = false;
           }
-          if (!gameOver && clickedCol >= 0 && clickedCol < 8 &&
-              clickedRow >= 0 && clickedRow < 8) {
+          if (!gameOver && !aiMovePending &&
+              !(gameMode == GameMode::PvAI && !whiteTurn) && clickedCol >= 0 &&
+              clickedCol < 8 && clickedRow >= 0 && clickedRow < 8) {
             if (clickCount == 0) {
 
               if (board[clickedRow][clickedCol] != '.') {
@@ -529,6 +552,11 @@ int main() {
                     }
 
                     moveHistory.push_back(move);
+                    {
+                      int tp = ((int)moveHistory.size() + 1) / 2;
+                      int mv = static_cast<int>(totalGridHeight / 35.f);
+                      ScrollHistory = std::max(0, tp - mv);
+                    }
                     selectedRow = -1;
                     selectedCol = -1;
                     clickCount = 0;
@@ -542,6 +570,54 @@ int main() {
               }
             }
           }
+        }
+      }
+    }
+
+    // AI moves
+    if (gameMode == GameMode::PvAI && !whiteTurn && !gameOver &&
+        !promotionPending && !aiMovePending) {
+      aiMovePending = true;
+    }
+
+    if (gameMode == GameMode::PvAI && aiMovePending && !gameOver &&
+        !promotionPending) {
+      Move aiMove = getRandomMove(false);
+      if (aiMove.startRow == -1) {
+        whiteTurn = !whiteTurn;
+        aiMovePending = false;
+      } else {
+        makeMove(aiMove);
+
+        if (aiMove.capturedPiece != '.')
+          captureSound.play();
+        else
+          moveSound.play();
+
+        lastStartRow = aiMove.startRow;
+        lastStartCol = aiMove.startCol;
+        lastEndRow = aiMove.endRow;
+        lastEndCol = aiMove.endCol;
+        move_made = true;
+        moveHistory.push_back(aiMove);
+        {
+          int tp = ((int)moveHistory.size() + 1) / 2;
+          int mv = static_cast<int>(totalGridHeight / 35.f);
+          ScrollHistory = std::max(0, tp - mv);
+        }
+
+        whiteTurn = !whiteTurn;
+        aiMovePending = false; // reset for next turn
+
+        bool inCheck = isKingInCheck(whiteTurn);
+        bool hasMoves = isAnyLegalMove(whiteTurn);
+        if (inCheck)
+          checkSound.play();
+        if (!hasMoves) {
+          gameOver = true;
+          gameResult = inCheck ? "Black Wins" : "Draw by StaleMate";
+          if (inCheck)
+            checkmateSound.play();
         }
       }
     }
@@ -715,52 +791,54 @@ int main() {
     // Notation
     float historyX = offsetX + totalGridWidth + 40.f;
     float historyY = offsetY;
+    float lineHeight = 35.f;
+    int maxVisible = static_cast<int>(totalGridHeight / lineHeight);
+    int totalPairs = ((int)moveHistory.size() + 1) / 2;
 
-    for (auto i = 0; i < moveHistory.size(); i += 2) {
+    for (int pair = ScrollHistory; pair < totalPairs; pair++) {
+      int i = pair * 2;
+
       std::string whiteMove = moveToNotation(moveHistory[i]);
-
       std::string blackMove = "";
-
-      if (i + 1 < moveHistory.size()) {
+      if (i + 1 < (int)moveHistory.size())
         blackMove = moveToNotation(moveHistory[i + 1]);
-      }
 
-      std::string line = std::to_string(i / 2 + 1) + ". " + whiteMove;
-
-      // spacing
-      while (line.size() < 12) {
+      std::string line = std::to_string(pair + 1) + ". " + whiteMove;
+      while (line.size() < 12)
         line += ' ';
-      }
-
       line += blackMove;
 
       sf::Text text(font);
-
       text.setCharacterSize(28);
       text.setString(line);
-
       text.setFillColor(sf::Color::White);
-
-      text.setPosition({historyX, historyY + (i / 2) * 35.f});
-
+      text.setPosition(
+          {historyX, historyY + (pair - ScrollHistory) * lineHeight});
       window.draw(text);
     }
+
     if (!isAnyLegalMove(whiteTurn)) {
       sf::Text finalText(font);
-
-      finalText.setCharacterSize(32);
-
+      finalText.setCharacterSize(28);
       finalText.setFillColor(sf::Color::Red);
 
       if (isKingInCheck(whiteTurn))
         finalText.setString(whiteTurn ? "CHECKMATE - Black Wins"
                                       : "CHECKMATE - White Wins");
-      if (!isKingInCheck(whiteTurn))
+      else
         finalText.setString("Draw by STALEMATE");
 
-      finalText.setPosition(
-          {historyX, historyY + moveHistory.size() * 20.f + 40.f});
+      int maxVisible = static_cast<int>(totalGridHeight / 35.f);
+      int totalPairs = ((int)moveHistory.size() + 1) / 2;
+      int visibleRows = std::min(totalPairs - ScrollHistory, maxVisible);
 
+      float textY = historyY + visibleRows * 35.f + 10.f;
+
+      float maxY = offsetY + totalGridHeight - 40.f;
+      if (textY > maxY)
+        textY = maxY;
+
+      finalText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
       window.draw(finalText);
     }
     window.draw(restartButton);
