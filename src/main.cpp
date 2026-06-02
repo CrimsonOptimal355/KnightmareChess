@@ -7,6 +7,10 @@
 #include <iostream>
 #include <vector>
 
+enum class GameMode { None, PvP, PvAI };
+GameMode gameMode = GameMode::None;
+bool showMainMenu = true;
+
 void loadTexture(std::unordered_map<char, sf::Texture> &textures, char key,
                  const std::string &path) {
   if (!textures[key].loadFromFile(path)) {
@@ -110,6 +114,25 @@ int main() {
   restartText.setString("Restart");
   restartText.setPosition({offsetX - 285.f, offsetY + 115.f});
 
+  // MainMenu Buttons
+  sf::RectangleShape pvpButton(sf::Vector2f(350.f, 100.f));
+  pvpButton.setPosition({725.f, 700.f});
+
+  sf::RectangleShape pvaiButton(sf::Vector2f(350.f, 100.f));
+  pvaiButton.setPosition({725.f, 850.f});
+
+  sf::Text pvpText(font);
+  pvpText.setString("Player vs Player");
+  pvpText.setCharacterSize(40);
+  pvpText.setPosition({740.f, 725.f});
+  pvpText.setFillColor(sf::Color::Black);
+
+  sf::Text pvaiText(font);
+  pvaiText.setString("Player vs AI");
+  pvaiText.setPosition({770.f, 875.f});
+  pvaiText.setCharacterSize(40);
+  pvaiText.setFillColor(sf::Color::Black);
+
   // Final Result Window
   sf::RectangleShape gameOverPanel(sf::Vector2f(500.f, 300.f));
   gameOverPanel.setFillColor(sf::Color(40, 40, 40, 230));
@@ -144,6 +167,23 @@ int main() {
   exitText.setFillColor(sf::Color::White);
   exitText.setPosition({windowWidth / 2.f + 90.f, windowHeight / 2.f + 55.f});
 
+  // Promotion
+  std::unordered_map<char, sf::Texture> texture_promo;
+  // White Pieces
+  loadTexture(texture_promo, 'R', "assets/textures/wr.png");
+  loadTexture(texture_promo, 'N', "assets/textures/wn.png");
+  loadTexture(texture_promo, 'B', "assets/textures/wb.png");
+  loadTexture(texture_promo, 'Q', "assets/textures/wq.png");
+  // Black Piecese
+  loadTexture(texture_promo, 'r', "assets/textures/br.png");
+  loadTexture(texture_promo, 'n', "assets/textures/bn.png");
+  loadTexture(texture_promo, 'b', "assets/textures/bb.png");
+  loadTexture(texture_promo, 'q', "assets/textures/bq.png");
+
+  std::vector<char> promotionOptions;
+  // promotionOptions = {'Q','R','B','N'};
+  // promotionOptions = {'q','r','b','n'};
+
   int selectedRow = -1;
   int selectedCol = -1;
   int clickCount = 0;
@@ -163,6 +203,11 @@ int main() {
   bool blackLeftRookMoved = false;
   bool blackRightRookMoved = false;
   bool gameOver = false;
+  bool promotionPending = false;
+  bool promotionWhite = true;
+  int promotionRow = -1;
+  int promotionCol = -1;
+
   std::string gameResult = "";
 
   std::vector<Move> moveHistory;
@@ -178,12 +223,62 @@ int main() {
       if (const auto *mouseClick =
               event->getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseClick->button == sf::Mouse::Button::Left) {
+
           int clickedCol =
               static_cast<int>((mouseClick->position.x - offsetX) / tileSize);
           int clickedRow =
               static_cast<int>((mouseClick->position.y - offsetY) / tileSize);
           sf::Vector2f mousePos(mouseClick->position.x, mouseClick->position.y);
+          // PROMOTION
+          if (promotionPending) {
+            float startX = 650.f;
+            float startY = 700.f;
 
+            char whitePieces[4] = {'Q', 'R', 'B', 'N'};
+            char blackPieces[4] = {'q', 'r', 'b', 'n'};
+
+            for (int i = 0; i < 4; i++) {
+              sf::FloatRect box({startX + i * 130.f, startY}, {120.f, 120.f});
+
+              if (box.contains(mousePos)) {
+                char chosenPiece =
+                    promotionWhite ? whitePieces[i] : blackPieces[i];
+
+                board[promotionRow][promotionCol] = chosenPiece;
+
+                promotionPending = false;
+                selectedRow = -1;
+                selectedCol = -1;
+                clickCount = 0;
+
+                whiteTurn = !whiteTurn;
+                legalMoves.clear();
+                bool inCheck = isKingInCheck(whiteTurn);
+                bool hasMoves = isAnyLegalMove(whiteTurn);
+
+                break;
+              }
+            }
+
+            continue;
+          }
+          // MainMenu
+          if (showMainMenu) {
+            sf::Vector2f mousePos(mouseClick->position.x,
+                                  mouseClick->position.y);
+
+            if (pvpButton.getGlobalBounds().contains(mousePos)) {
+              gameMode = GameMode::PvP;
+              showMainMenu = false;
+            }
+
+            if (pvaiButton.getGlobalBounds().contains(mousePos)) {
+              gameMode = GameMode::PvAI;
+              showMainMenu = false;
+            }
+
+            continue;
+          }
           if (restartButton.getGlobalBounds().contains(mousePos)) {
             char resetBoard[8][8] = {{'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
                                      {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
@@ -221,6 +316,8 @@ int main() {
 
             blackLeftRookMoved = false;
             blackRightRookMoved = false;
+            showMainMenu = true;
+            gameMode = GameMode::None;
           }
           if (gameOver && exitButton.getGlobalBounds().contains(mousePos)) {
             window.close();
@@ -266,8 +363,8 @@ int main() {
             blackLeftRookMoved = false;
             blackRightRookMoved = false;
           }
-          if (clickedCol >= 0 && clickedCol < 8 && clickedRow >= 0 &&
-              clickedRow < 8) {
+          if (!gameOver && clickedCol >= 0 && clickedCol < 8 &&
+              clickedRow >= 0 && clickedRow < 8) {
             if (clickCount == 0) {
 
               if (board[clickedRow][clickedCol] != '.') {
@@ -380,10 +477,18 @@ int main() {
                     selectedCol = -1;
                     clickCount = 0;
                   } else {
-                    if (sourcePiece == 'P' && clickedRow == 0)
-                      board[move.endRow][move.endCol] = 'Q';
-                    if (sourcePiece == 'p' && clickedRow == 7)
-                      board[move.endRow][move.endCol] = 'q';
+                    if (sourcePiece == 'P' && clickedRow == 0) {
+                      promotionPending = true;
+                      promotionWhite = true;
+                      promotionRow = move.endRow;
+                      promotionCol = move.endCol;
+                    }
+                    if (sourcePiece == 'p' && clickedRow == 7) {
+                      promotionPending = true;
+                      promotionWhite = false;
+                      promotionRow = move.endRow;
+                      promotionCol = move.endCol;
+                    }
 
                     if (castlingMove)
                       castleSound.play();
@@ -398,12 +503,20 @@ int main() {
                     lastEndCol = move.endCol;
                     move_made = true;
 
-                    whiteTurn = !whiteTurn;
+                    if (!promotionPending) {
+                      whiteTurn = !whiteTurn;
+                    }
                     bool inCheck = isKingInCheck(whiteTurn);
                     bool hasMoves = isAnyLegalMove(whiteTurn);
 
                     if (inCheck)
                       checkSound.play();
+                    if (!hasMoves) {
+                      gameOver = true;
+                      gameResult =
+                          inCheck ? (whiteTurn ? "Black Wins" : "White Wins")
+                                  : "Draw by StaleMate";
+                    }
 
                     if (!hasMoves) {
                       gameOver = true;
@@ -434,6 +547,17 @@ int main() {
     }
     window.clear();
     displayBoard();
+    // Main Menu
+    if (showMainMenu) {
+      window.draw(pvpButton);
+      window.draw(pvaiButton);
+
+      window.draw(pvpText);
+      window.draw(pvaiText);
+
+      window.display();
+      continue;
+    }
     // Drawing Board
     for (int row = 0; row < 8; row++) {
       for (int col = 0; col < 8; col++) {
@@ -441,9 +565,9 @@ int main() {
             sf::Vector2f(offsetX + col * tileSize, offsetY + row * tileSize));
         // Alternate Colouring
         if ((row + col) % 2 == 0) {
-          square.setFillColor(sf::Color(181, 136, 99));
-        } else {
           square.setFillColor(sf::Color(240, 217, 181));
+        } else {
+          square.setFillColor(sf::Color(181, 136, 99));
         }
         window.draw(square);
       }
@@ -457,9 +581,9 @@ int main() {
       fileText.setStyle(sf::Text::Bold);
 
       if ((7 + col) % 2 == 0) {
-        fileText.setFillColor(sf::Color(240, 217, 181));
-      } else {
         fileText.setFillColor(sf::Color(181, 136, 99));
+      } else {
+        fileText.setFillColor(sf::Color(240, 217, 181));
       }
 
       std::string letter = std::string(1, 'a' + col);
@@ -479,9 +603,9 @@ int main() {
       rankText.setStyle(sf::Text::Bold);
 
       if ((row + 0) % 2 == 0) {
-        rankText.setFillColor(sf::Color(240, 217, 181));
-      } else {
         rankText.setFillColor(sf::Color(181, 136, 99));
+      } else {
+        rankText.setFillColor(sf::Color(240, 217, 181));
       }
 
       std::string number = std::to_string(8 - row);
@@ -555,6 +679,35 @@ int main() {
 
         sprite.setScale({tileSize / textures[piece].getSize().x,
                          tileSize / textures[piece].getSize().y});
+
+        window.draw(sprite);
+      }
+    }
+    // Promotion
+    if (promotionPending) {
+      float startX = 650.f;
+      float startY = 700.f;
+      char whitePieces[4] = {'Q', 'R', 'B', 'N'};
+      char BlackPieces[4] = {'q', 'r', 'b', 'n'};
+      char piece;
+      for (int i = 0; i < 4; i++) {
+        if (promotionWhite) {
+          piece = whitePieces[i];
+        } else {
+          piece = BlackPieces[i];
+        }
+        sf::RectangleShape optionBox({120.f, 120.f});
+        optionBox.setFillColor(sf::Color(50, 50, 50, 240));
+        optionBox.setPosition({startX + i * 130.f, startY});
+
+        window.draw(optionBox);
+
+        sf::Sprite sprite(texture_promo[piece]);
+
+        sprite.setPosition({startX + i * 130.f + 10.f, startY + 10.f});
+
+        sprite.setScale({100.f / texture_promo[piece].getSize().x,
+                         100.f / texture_promo[piece].getSize().y});
 
         window.draw(sprite);
       }
