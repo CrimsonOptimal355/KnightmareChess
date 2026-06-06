@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 # ── Paths ──────────────────────────────────────────────────────
 $scriptDir = $PSScriptRoot
 $projectDir = if (Test-Path (Join-Path $scriptDir 'src')) { $scriptDir } else { Split-Path -Path $scriptDir -Parent }
-$sfmlDir     = Join-Path $projectDir 'New\Practice\External\SFML-MinGW\SFML-3.0.0'
+$sfmlDir     = Join-Path $projectDir 'external\SFML-3.1.0'
 $outputDir   = Join-Path $projectDir 'bin'
 $outputExe   = Join-Path $outputDir 'Chess.exe'
 
@@ -56,6 +56,7 @@ $sourceFilesStr = $sourceFiles | ForEach-Object { "`"$_`"" }
 Write-Host "[2/2] Compiling Chess files..."
 $compileArgs = @(
     '-std=c++17',
+    '-O3',                         # optimize for speed
     '-g',                          # debug symbols for GDB
     "-I`"$projectDir\include`"",
     "-I`"$sfmlDir\include`"",

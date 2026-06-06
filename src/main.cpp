@@ -6,9 +6,12 @@
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <mutex>
+#include <thread>
 #include <vector>
 
 enum class GameMode { None, PvP, PvAI };
@@ -215,6 +218,12 @@ int main() {
   bool aiMovePending = false;
   int ScrollHistory = 0;
 
+  /*using multithreading for ai , this will run ai on another thread and
+   hence i will see board after white move and before black move */
+  std::atomic<bool> aiMoveReady(false);
+  std::atomic<bool> aiThinking(false);
+  Move aiChosenMove = {-1, -1, -1, -1, '.', '.', false};
+  std::mutex aiMoveMutex;
   std::string gameResult = "";
 
   std::vector<Move> moveHistory;
@@ -272,6 +281,9 @@ int main() {
                 clickCount = 0;
 
                 whiteTurn = !whiteTurn;
+                if (gameMode == GameMode::PvAI && !whiteTurn) {
+                  aiMovePending = true;
+                }
                 legalMoves.clear();
                 bool inCheck = isKingInCheck(whiteTurn);
                 bool hasMoves = isAnyLegalMove(whiteTurn);
@@ -339,6 +351,8 @@ int main() {
             showMainMenu = true;
             gameMode = GameMode::None;
             aiMovePending = false;
+            aiThinking = false;
+            aiChosenMove = {-1, -1, -1, -1, '.', '.', false};
             ScrollHistory = 0;
           }
           if (gameOver && exitButton.getGlobalBounds().contains(mousePos)) {
@@ -529,6 +543,9 @@ int main() {
                     if (!promotionPending) {
                       whiteTurn = !whiteTurn;
                     }
+                    if (gameMode == GameMode::PvAI && !whiteTurn) {
+                      aiMovePending = true;
+                    }
                     bool inCheck = isKingInCheck(whiteTurn);
                     bool hasMoves = isAnyLegalMove(whiteTurn);
 
@@ -549,6 +566,9 @@ int main() {
                       } else {
                         gameResult = "Draw by StaleMate";
                       }
+                    } else if (isInsufficientMaterial()) {
+                      gameOver = true;
+                      gameResult = "Draw by Insufficient Material";
                     }
 
                     moveHistory.push_back(move);
@@ -575,40 +595,63 @@ int main() {
       }
     }
 
-    // AI moves
+    // AI on diff thread
     if (gameMode == GameMode::PvAI && !whiteTurn && !gameOver &&
-        !promotionPending && !aiMovePending) {
-      aiMovePending = true;
+        !promotionPending && !aiThinking && aiMovePending && !aiMoveReady) {
+
+      aiThinking = true;
+
+      std::thread([mainBoard = &board, mainEPA = &enPassantAvailable,
+                   mainEPR = &enPassantRow, mainEPC = &enPassantCol,
+                   &aiMoveMutex, &aiChosenMove, &aiThinking, &aiMoveReady]() {
+        // Copy the main thread board state to this thread
+        for (int r = 0; r < 8; ++r) {
+          for (int c = 0; c < 8; ++c) {
+            board[r][c] = (*mainBoard)[r][c];
+          }
+        }
+        enPassantAvailable = *mainEPA;
+        enPassantRow = *mainEPR;
+        enPassantCol = *mainEPC;
+
+        Move result = getMinimaxMove(false, 5);
+
+        std::lock_guard<std::mutex> lock(aiMoveMutex);
+        aiChosenMove = result;
+        aiThinking = false;
+        aiMoveReady = true; // signal that move is ready to apply
+      }).detach();
     }
 
-    if (gameMode == GameMode::PvAI && aiMovePending && !gameOver &&
-        !promotionPending) {
-      Move aiMove = getRandomMove(false);
-      if (aiMove.startRow == -1) {
-        whiteTurn = !whiteTurn;
-        aiMovePending = false;
-      } else {
-        makeMove(aiMove);
+    // Apply AI move after thinking
+    if (gameMode == GameMode::PvAI && !aiThinking && aiMovePending &&
+        aiMoveReady && !gameOver && !promotionPending) {
 
-        if (aiMove.capturedPiece != '.')
+      std::lock_guard<std::mutex> lock(aiMoveMutex);
+      if (aiChosenMove.startRow != -1) {
+        makeMove(aiChosenMove);
+        if (aiChosenMove.capturedPiece != '.')
           captureSound.play();
         else
           moveSound.play();
 
-        lastStartRow = aiMove.startRow;
-        lastStartCol = aiMove.startCol;
-        lastEndRow = aiMove.endRow;
-        lastEndCol = aiMove.endCol;
+        lastStartRow = aiChosenMove.startRow;
+        lastStartCol = aiChosenMove.startCol;
+        lastEndRow = aiChosenMove.endRow;
+        lastEndCol = aiChosenMove.endCol;
         move_made = true;
-        moveHistory.push_back(aiMove);
+        moveHistory.push_back(aiChosenMove);
+
         {
           int tp = ((int)moveHistory.size() + 1) / 2;
           int mv = static_cast<int>(totalGridHeight / 35.f);
           ScrollHistory = std::max(0, tp - mv);
         }
 
-        whiteTurn = !whiteTurn;
-        aiMovePending = false; // reset for next turn
+        whiteTurn = true;
+        aiMovePending = false;
+        aiMoveReady = false;
+        aiChosenMove = {-1, -1, -1, -1, '.', '.', false}; // reset
 
         bool inCheck = isKingInCheck(whiteTurn);
         bool hasMoves = isAnyLegalMove(whiteTurn);
@@ -623,6 +666,15 @@ int main() {
       }
     }
     window.clear();
+    // Msg while ai is thinking
+    if (aiThinking) {
+      sf::Text thinkText(font);
+      thinkText.setCharacterSize(28);
+      thinkText.setFillColor(sf::Color::Yellow);
+      thinkText.setString("AI Thinking...");
+      thinkText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
+      window.draw(thinkText);
+    }
     // displayBoard();
     // Main Menu
     if (showMainMenu) {
@@ -817,6 +869,15 @@ int main() {
           {historyX, historyY + (pair - ScrollHistory) * lineHeight});
       window.draw(text);
     }
+    if (isInsufficientMaterial()) {
+      sf::Text finalText(font);
+      finalText.setCharacterSize(28);
+      finalText.setFillColor(sf::Color::Red);
+      finalText.setString("Draw by\nInsufficient Material");
+      sf::FloatRect textBounds = finalText.getLocalBounds();
+      finalText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
+      window.draw(finalText);
+    }
 
     if (!isAnyLegalMove(whiteTurn)) {
       sf::Text finalText(font);
@@ -828,7 +889,6 @@ int main() {
                                       : "CHECKMATE - White Wins");
       else
         finalText.setString("Draw by STALEMATE");
-
       int maxVisible = static_cast<int>(totalGridHeight / 35.f);
       int totalPairs = ((int)moveHistory.size() + 1) / 2;
       int visibleRows = std::min(totalPairs - ScrollHistory, maxVisible);

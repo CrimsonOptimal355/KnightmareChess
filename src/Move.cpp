@@ -2,7 +2,6 @@
 #include "Move.hpp"
 #include "Board.hpp"
 #include "MoveStruct.hpp"
-
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -86,12 +85,12 @@ bool isPathClear(int startRow, int startCol, int endRow, int endCol) {
 }
 bool isValidRookMove(int startRow, int startCol, int endRow, int endCol,
                      char sourcepiece, char targetpiece) {
-  // Horizontal move
+  // Horiz
   if (startRow == endRow) {
     return isPathClear(startRow, startCol, endRow, endCol);
   }
 
-  // Vertical move
+  // Vert
   if (startCol == endCol) {
     return isPathClear(startRow, startCol, endRow, endCol);
   }
@@ -101,7 +100,7 @@ bool isValidRookMove(int startRow, int startCol, int endRow, int endCol,
 }
 bool isValidBishopMove(int startRow, int startCol, int endRow, int endCol,
                        char sourcepiece, char targetpiece) {
-  // Diagonal Move
+  // Diag
   if (std::abs(endRow - startRow) == std::abs(endCol - startCol))
     return isPathClear(startRow, startCol, endRow, endCol);
 
@@ -109,7 +108,7 @@ bool isValidBishopMove(int startRow, int startCol, int endRow, int endCol,
 }
 bool isValidKnightMove(int startRow, int startCol, int endRow, int endCol,
                        char sourcepiece, char targetpiece) {
-  // Knight Move
+  // Knight
   if ((std::abs(endRow - startRow) == 2 && std::abs(endCol - startCol) == 1) ||
       (std::abs(endRow - startRow) == 1 && std::abs(endCol - startCol) == 2))
     return true;
@@ -119,14 +118,14 @@ bool isValidKnightMove(int startRow, int startCol, int endRow, int endCol,
 bool isValidQueenMove(int startRow, int startCol, int endRow, int endCol,
                       char sourcepiece, char targetpiece) {
   // Bishop + Rook Move
-  // Diagonal
+  // Diag
   if (std::abs(endRow - startRow) == std::abs(endCol - startCol))
     return isPathClear(startRow, startCol, endRow, endCol);
-  // Horizontal move
+  // Horiz
   if (startRow == endRow) {
     return isPathClear(startRow, startCol, endRow, endCol);
   }
-  // Vertical move
+  // Vert
   if (startCol == endCol) {
     return isPathClear(startRow, startCol, endRow, endCol);
   }
@@ -148,7 +147,7 @@ bool isKingInCheck(bool whiteKing) {
   char targetKing = whiteKing ? 'K' : 'k';
   int kRow = -1, kCol = -1;
 
-  // 1. Find King
+  // king loc
   for (int r = 0; r < 8; r++) {
     for (int c = 0; c < 8; c++) {
       if (board[r][c] == targetKing) {
@@ -161,7 +160,7 @@ bool isKingInCheck(bool whiteKing) {
       break;
   }
 
-  // 2. Scan for enemy
+  // enemy loc
   for (int r = 0; r < 8; r++) {
     for (int c = 0; c < 8; c++) {
       char piece = board[r][c];
@@ -178,7 +177,6 @@ bool isKingInCheck(bool whiteKing) {
         continue;
       }
 
-      // Route slider and jumper pieces using their lower-case identifiers
       bool isCheck = false;
       isCheck = isValidMove(r, c, kRow, kCol, piece, targetKing);
       if (isCheck)
@@ -214,6 +212,9 @@ bool isAnyLegalMove(bool whiteTurn) {
           move.movedPiece = piece;
           move.capturedPiece = target;
           move.wasEnPassant = false;
+          move.prevEnPassantAvailable = false;
+          move.prevEnPassantRow = -1;
+          move.prevEnPassantCol = -1;
 
           makeMove(move);
           bool kingUnsafe = isKingInCheck(whiteTurn);
@@ -360,7 +361,6 @@ void makeMove(Move &move) {
       !isInsideBoard(move.endRow, move.endCol)) {
     return;
   }
-
   move.wasEnPassant = false;
   move.prevEnPassantAvailable = enPassantAvailable;
   move.prevEnPassantRow = enPassantRow;
@@ -369,10 +369,16 @@ void makeMove(Move &move) {
 
   if ((piece == 'P' || piece == 'p') && move.endRow == enPassantRow &&
       move.endCol == enPassantCol && board[move.endRow][move.endCol] == '.') {
+
     move.wasEnPassant = true;
+
     if (piece == 'P') {
+      move.capturedPiece = board[move.endRow + 1][move.endCol];
+
       board[move.endRow + 1][move.endCol] = '.';
     } else {
+      move.capturedPiece = board[move.endRow - 1][move.endCol];
+
       board[move.endRow - 1][move.endCol] = '.';
     }
   }
@@ -396,6 +402,10 @@ void makeMove(Move &move) {
     enPassantRow = 2;
     enPassantCol = move.startCol;
   }
+  if (board[move.endRow][move.endCol] == 'P' && move.endRow == 0)
+    board[move.endRow][move.endCol] = 'Q';
+  if (board[move.endRow][move.endCol] == 'p' && move.endRow == 7)
+    board[move.endRow][move.endCol] = 'q';
 }
 void undoMove(const Move &move) {
   if (!isInsideBoard(move.startRow, move.startCol) ||
@@ -407,10 +417,13 @@ void undoMove(const Move &move) {
   board[move.endRow][move.endCol] = move.capturedPiece;
 
   if (move.wasEnPassant) {
+
+    board[move.endRow][move.endCol] = '.';
+
     if (move.movedPiece == 'P') {
-      board[move.endRow + 1][move.endCol] = 'p';
+      board[move.endRow + 1][move.endCol] = move.capturedPiece;
     } else {
-      board[move.endRow - 1][move.endCol] = 'P';
+      board[move.endRow - 1][move.endCol] = move.capturedPiece;
     }
   }
   enPassantAvailable = move.prevEnPassantAvailable;
@@ -459,4 +472,101 @@ std::vector<Move> generateLegalMoves(bool whiteTurn) {
   std::vector<Move> legalMoves;
 
   return legalMoves;
+}
+/*Insuff draw
+  1) King + Bishop vs King
+  2) King + Knight vs King
+  3) King vs King
+  4) King + Bishop vs King + Bishop (on same color tile)*/
+
+bool isInsufficientMaterial() {
+  // count peices
+  int whiteKings = 0, blackKings = 0;
+  int whiteBishops = 0, blackBishops = 0;
+  int whiteKnights = 0, blackKnights = 0;
+  int whiteOther = 0, blackOther = 0;
+
+  // getting bishop tile colour
+  int whiteBishopSquareColor = -1;
+  int blackBishopSquareColor = -1;
+
+  for (int r = 0; r < 8; r++) {
+    for (int c = 0; c < 8; c++) {
+      char p = board[r][c];
+      if (p == '.')
+        continue;
+
+      switch (p) {
+      case 'K':
+        whiteKings++;
+        break;
+      case 'k':
+        blackKings++;
+        break;
+
+      case 'B':
+        whiteBishops++;
+        whiteBishopSquareColor = (r + c) % 2;
+        break;
+      case 'b':
+        blackBishops++;
+        blackBishopSquareColor = (r + c) % 2;
+        break;
+
+      case 'N':
+        whiteKnights++;
+        break;
+      case 'n':
+        blackKnights++;
+        break;
+
+      // anything else = mating material
+      case 'Q':
+      case 'R':
+      case 'P':
+        whiteOther++;
+        break;
+      case 'q':
+      case 'r':
+      case 'p':
+        blackOther++;
+        break;
+      }
+    }
+  }
+
+  // If any other , no draw
+  if (whiteOther > 0 || blackOther > 0)
+    return false;
+
+  // if more than one bihsop,knight or both , no draw.
+  int whiteMinors = whiteBishops + whiteKnights;
+  int blackMinors = blackBishops + blackKnights;
+
+  // K vs K
+  if (whiteMinors == 0 && blackMinors == 0)
+    return true;
+
+  // K+B vs K
+  if (whiteBishops == 1 && whiteKnights == 0 && blackMinors == 0)
+    return true;
+
+  // K vs K+B
+  if (blackBishops == 1 && blackKnights == 0 && whiteMinors == 0)
+    return true;
+
+  // K+N vs K
+  if (whiteKnights == 1 && whiteBishops == 0 && blackMinors == 0)
+    return true;
+
+  // K vs K+N
+  if (blackKnights == 1 && blackBishops == 0 && whiteMinors == 0)
+    return true;
+
+  // K+B vs K+B (same square color bishops)
+  if (whiteBishops == 1 && blackBishops == 1 && whiteKnights == 0 &&
+      blackKnights == 0 && whiteBishopSquareColor == blackBishopSquareColor)
+    return true;
+
+  return false;
 }

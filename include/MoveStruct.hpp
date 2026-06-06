@@ -1,6 +1,7 @@
 #pragma once
 
 struct Move {
+
   int startRow;
   int startCol;
 
@@ -10,10 +11,24 @@ struct Move {
   char movedPiece;
   char capturedPiece;
 
-  bool castling = false;
-  bool promotion = false;
+  bool wasPromotion = false;
+  char promotionPiece = '.';
+
+  bool wasCastling = false;
   bool wasEnPassant = false;
+
+  bool isCastling = false;
+
   bool prevEnPassantAvailable;
   int prevEnPassantRow;
   int prevEnPassantCol;
+
+  bool prevWhiteKingMoved;
+  bool prevBlackKingMoved;
+
+  bool prevWhiteLeftRookMoved;
+  bool prevWhiteRightRookMoved;
+
+  bool prevBlackLeftRookMoved;
+  bool prevBlackRightRookMoved;
 };

@@ -1,17 +1,5 @@
 #include "ai.hpp"
 #include "Board.hpp"
-#include <cstdlib>
-#include <ctime>
-
-Move getRandomMove(bool forWhite) {
-  std::vector<Move> moves = getAllLegalMoves(forWhite);
-
-  if (moves.empty())
-    return Move{-1, -1, -1, -1, '.', '.', false};
-
-  int idx = rand() % moves.size();
-  return moves[idx];
-}
 
 std::vector<Move> getAllLegalMoves(bool forWhite) {
   std::vector<Move> moves;
@@ -34,7 +22,15 @@ std::vector<Move> getAllLegalMoves(bool forWhite) {
           if (!isValidMove(sr, sc, er, ec, piece, target))
             continue;
 
-          Move m{sr, sc, er, ec, piece, target, false};
+          Move m{};
+          m.startRow = sr;
+          m.startCol = sc;
+          m.endRow = er;
+          m.endCol = ec;
+          m.movedPiece = piece;
+          m.capturedPiece = target;
+          m.wasEnPassant = false;
+
           makeMove(m);
           bool safe = !isKingInCheck(forWhite);
           undoMove(m);
@@ -44,7 +40,9 @@ std::vector<Move> getAllLegalMoves(bool forWhite) {
     }
   return moves;
 }
-// Evaluation Functions
+
+// Piece-Square Tables for Evaluation
+
 const int pawnTable[8][8] = {
     {0, 0, 0, 0, 0, 0, 0, 0},         {50, 50, 50, 50, 50, 50, 50, 50},
     {10, 10, 20, 30, 30, 20, 10, 10}, {5, 5, 10, 25, 25, 10, 5, 5},
@@ -111,13 +109,9 @@ int pieceValue(char p) {
     return 0;
   }
 }
-int positionBonus(char piece, int row, int col) {
-  int r;
-  if (isWhite(piece))
-    r = 7 - row;
-  else
-    row;
 
+int positionBonus(char piece, int row, int col) {
+  int r = isWhite(piece) ? row : (7 - row);
   switch (tolower(piece)) {
   case 'p':
     return pawnTable[r][col];
@@ -134,23 +128,108 @@ int positionBonus(char piece, int row, int col) {
   default:
     return 0;
   }
+  // ai will go for promotion
+  if (piece == 'p')
+    return pawnTable[r][col] + (7 - r) * 20;
+
+  if (piece == 'P')
+    return pawnTable[r][col] + (7 - r) * 20;
 }
-// main 
+
+// Positive = black advantage, negative = white advantage.
 int evaluateBoard() {
   int score = 0;
-  for (int r = 0; r < 8; r++) {
+  for (int r = 0; r < 8; r++)
     for (int c = 0; c < 8; c++) {
       char p = board[r][c];
       if (p == '.')
         continue;
-
       int val = pieceValue(p) + positionBonus(p, r, c);
-
       if (isBlack(p))
         score += val;
       else
         score -= val;
     }
-  }
   return score;
+}
+
+int minimax(int depth, bool whiteTurnNow, int alpha, int beta) {
+  if (depth == 0)
+    return evaluateBoard();
+  if (isInsufficientMaterial())
+    return 0;
+  std::vector<Move> moves = getAllLegalMoves(whiteTurnNow);
+
+  if (moves.empty()) {
+    if (isKingInCheck(whiteTurnNow))
+      return whiteTurnNow ? (100000 + depth) : (-100000 - depth); // checkmate
+    return 0;                                                     // stalemate
+  }
+
+  if (!whiteTurnNow) {
+    int best = INT_MIN;
+
+    for (auto &m : moves) {
+      makeMove(m);
+
+      int score = minimax(depth - 1, !whiteTurnNow, alpha, beta);
+
+      undoMove(m);
+
+      best = std::max(best, score);
+
+      alpha = std::max(alpha, best);
+
+      if (alpha >= beta)
+        break; // prune
+    }
+
+    return best;
+  } else {
+    int best = INT_MAX;
+
+    for (auto &m : moves) {
+      makeMove(m);
+
+      int score = minimax(depth - 1, !whiteTurnNow, alpha, beta);
+
+      undoMove(m);
+
+      best = std::min(best, score);
+
+      beta = std::min(beta, best);
+
+      if (alpha >= beta)
+        break; // prune
+    }
+
+    return best;
+  }
+}
+
+Move getMinimaxMove(bool forWhite, int depth) {
+  std::vector<Move> moves = getAllLegalMoves(forWhite);
+  if (moves.empty())
+    return Move{-1, -1, -1, -1, '.', '.', false};
+
+  Move bestMove = moves[0];
+  int bestScore = forWhite ? INT_MAX : INT_MIN;
+  bool bestGivesCheck = false;
+
+  for (auto &m : moves) {
+    makeMove(m);
+    bool givesCheck = isKingInCheck(!forWhite);
+    int score = minimax(depth - 1, !forWhite, INT_MIN, INT_MAX);
+    undoMove(m);
+
+    bool better = forWhite ? (score < bestScore) : (score > bestScore);
+    bool equalAndCheck = (score == bestScore) && givesCheck && !bestGivesCheck;
+
+    if (better || equalAndCheck) {
+      bestScore = score;
+      bestMove = m;
+      bestGivesCheck = givesCheck;
+    }
+  }
+  return bestMove;
 }

@@ -1,8 +1,9 @@
 #pragma once
 #include "MoveStruct.hpp"
-#include <vector>
-#include <string>
 #include <iostream>
+#include <string>
+#include <vector>
+
 
 bool isValidPawnMove(int startRow, int startCol, int endRow, int endCol,
                      char sourcepiece, char targetpiece);
@@ -31,3 +32,4 @@ void makeMove(Move &move);
 void undoMove(const Move &move);
 std::string moveToNotation(const Move &move);
 std::vector<Move> generateLegalMoves(bool whiteTurn);
+bool isInsufficientMaterial();

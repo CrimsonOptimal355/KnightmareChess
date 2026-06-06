@@ -1,1 +1,0 @@
-// Piece.cpp implementation
