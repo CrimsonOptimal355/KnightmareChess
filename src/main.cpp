@@ -10,7 +10,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <map>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -32,8 +34,6 @@ void loadSound(sf::SoundBuffer &Buffer, const std::string &path) {
 
 int main() {
   srand(time(0));
-  // Printing Board on Console
-  displayBoard();
 
   const float windowHeight = 1800.f;
   const float windowWidth = 1800.f;
@@ -122,24 +122,58 @@ int main() {
   restartText.setString("Restart");
   restartText.setPosition({offsetX - 285.f, offsetY + 115.f});
 
-  // MainMenu Buttons
-  sf::RectangleShape pvpButton(sf::Vector2f(350.f, 100.f));
-  pvpButton.setPosition({725.f, 700.f});
+  // MainMenu Backgroung
+  sf::RectangleShape menuBackground(sf::Vector2f(windowWidth, windowHeight));
+  menuBackground.setFillColor(sf::Color(74, 35, 10));
+  menuBackground.setPosition({0.f, 0.f});
 
-  sf::RectangleShape pvaiButton(sf::Vector2f(350.f, 100.f));
-  pvaiButton.setPosition({725.f, 850.f});
+  // MainMenu Text
+  sf::Text menuTitle(font);
+  menuTitle.setCharacterSize(80);
+  menuTitle.setFillColor(sf::Color(185, 148, 82));
+  menuTitle.setStyle(sf::Text::Bold);
+  menuTitle.setString("KNIGHTMARE CHESS");
+  sf::FloatRect titleBounds = menuTitle.getLocalBounds();
+  menuTitle.setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f,
+                       titleBounds.position.y + titleBounds.size.y / 2.f});
+  menuTitle.setPosition({windowWidth / 2.f, windowHeight / 3.f});
+
+  // MainMenu Buttons
+  // PvP
+  sf::RectangleShape pvpButton(sf::Vector2f(580.f, 110.f));
+  pvpButton.setFillColor(sf::Color(185, 148, 82));
+  pvpButton.setOutlineColor(sf::Color(210, 175, 100));
+  pvpButton.setOutlineThickness(3.f);
+  pvpButton.setPosition(
+      {windowWidth / 2.f - 290.f, windowHeight / 2.f - 130.f});
 
   sf::Text pvpText(font);
-  pvpText.setString("Player vs Player");
-  pvpText.setCharacterSize(40);
-  pvpText.setPosition({740.f, 725.f});
-  pvpText.setFillColor(sf::Color::Black);
+  pvpText.setCharacterSize(42);
+  pvpText.setFillColor(sf::Color(40, 20, 5));
+  pvpText.setStyle(sf::Text::Bold);
+  pvpText.setString("PLAYER  vs  PLAYER");
+  sf::FloatRect pvpBounds = pvpText.getLocalBounds();
+  pvpText.setOrigin({pvpBounds.position.x + pvpBounds.size.x / 2.f,
+                     pvpBounds.position.y + pvpBounds.size.y / 2.f});
+  pvpText.setPosition({windowWidth / 2.f, windowHeight / 2.f - 75.f});
+
+  // PvAI
+  sf::RectangleShape pvaiButton(sf::Vector2f(580.f, 110.f));
+  pvaiButton.setFillColor(sf::Color(185, 148, 82));
+  pvaiButton.setOutlineColor(sf::Color(210, 175, 100));
+  pvaiButton.setOutlineThickness(3.f);
+  pvaiButton.setPosition(
+      {windowWidth / 2.f - 290.f, windowHeight / 2.f + 20.f});
 
   sf::Text pvaiText(font);
-  pvaiText.setString("Player vs AI");
-  pvaiText.setPosition({770.f, 875.f});
-  pvaiText.setCharacterSize(40);
-  pvaiText.setFillColor(sf::Color::Black);
+  pvaiText.setCharacterSize(42);
+  pvaiText.setFillColor(sf::Color(40, 20, 5));
+  pvaiText.setStyle(sf::Text::Bold);
+  pvaiText.setString("PLAYER  vs  AI");
+  sf::FloatRect pvaiBounds = pvaiText.getLocalBounds();
+  pvaiText.setOrigin({pvaiBounds.position.x + pvaiBounds.size.x / 2.f,
+                      pvaiBounds.position.y + pvaiBounds.size.y / 2.f});
+  pvaiText.setPosition({windowWidth / 2.f, windowHeight / 2.f + 75.f});
 
   // Final Result Window
   sf::RectangleShape gameOverPanel(sf::Vector2f(500.f, 300.f));
@@ -217,7 +251,11 @@ int main() {
   int promotionCol = -1;
   bool aiMovePending = false;
   int ScrollHistory = 0;
+  int selectedDepth = 3; // default depth
+  bool showDepthMenu = false;
 
+  // for draw by repetation
+  std::map<std::string, int> positionCount;
   /*using multithreading for ai , this will run ai on another thread and
    hence i will see board after white move and before black move */
   std::atomic<bool> aiMoveReady(false);
@@ -229,6 +267,48 @@ int main() {
   std::vector<Move> moveHistory;
   std::vector<sf::Vector2i> legalMoves;
 
+  // Depth selector
+  sf::RectangleShape depthButtons[5];
+  std::vector<sf::Text> depthTexts;
+  std::vector<sf::Text> diffLabels;
+
+  for (int i = 0; i < 5; i++) {
+    depthTexts.emplace_back(font);
+    diffLabels.emplace_back(font);
+  }
+
+  for (int i = 0; i < 5; i++) {
+    depthButtons[i].setSize(sf::Vector2f(80.f, 80.f));
+    depthButtons[i].setFillColor(sf::Color(70, 70, 70));
+    depthButtons[i].setPosition(
+        {windowWidth / 2.f - 220.f + i * 110.f, windowHeight / 2.f - 40.f});
+
+    depthTexts[i].setFont(font);
+    depthTexts[i].setCharacterSize(36);
+    depthTexts[i].setString(std::to_string(i + 1));
+    depthTexts[i].setFillColor(sf::Color::White);
+    depthTexts[i].setPosition(
+        {windowWidth / 2.f - 200.f + i * 110.f, windowHeight / 2.f - 20.f});
+  }
+
+  // Depth menu title
+  sf::Text depthTitle(font);
+  depthTitle.setCharacterSize(36);
+  depthTitle.setFillColor(sf::Color::White);
+  depthTitle.setString("Select Difficulty");
+  depthTitle.setPosition(
+      {windowWidth / 2.f - 200.f, windowHeight / 2.f - 120.f});
+
+  // Difficulty labels
+  std::string labelNames[5] = {"Baby", "Easy", "Medium", "Hard", "Expert"};
+  for (int i = 0; i < 5; i++) {
+    diffLabels[i].setFont(font);
+    diffLabels[i].setCharacterSize(18);
+    diffLabels[i].setFillColor(sf::Color(180, 180, 180));
+    diffLabels[i].setString(labelNames[i]);
+    diffLabels[i].setPosition(
+        {windowWidth / 2.f - 220.f + i * 110.f, windowHeight / 2.f + 50.f});
+  }
   while (window.isOpen()) {
     // EVENTS
     while (auto event = window.pollEvent()) {
@@ -294,6 +374,16 @@ int main() {
 
             continue;
           }
+          if (showDepthMenu) {
+            for (int i = 0; i < 5; i++) {
+              if (depthButtons[i].getGlobalBounds().contains(mousePos)) {
+                selectedDepth = i + 1;
+                gameMode = GameMode::PvAI;
+                showDepthMenu = false;
+              }
+            }
+            continue;
+          }
           // MainMenu
           if (showMainMenu) {
             sf::Vector2f mousePos(mouseClick->position.x,
@@ -303,12 +393,10 @@ int main() {
               gameMode = GameMode::PvP;
               showMainMenu = false;
             }
-
             if (pvaiButton.getGlobalBounds().contains(mousePos)) {
-              gameMode = GameMode::PvAI;
+              showDepthMenu = true;
               showMainMenu = false;
             }
-
             continue;
           }
           if (restartButton.getGlobalBounds().contains(mousePos)) {
@@ -351,9 +439,13 @@ int main() {
             showMainMenu = true;
             gameMode = GameMode::None;
             aiMovePending = false;
+            positionCount.clear();
             aiThinking = false;
             aiChosenMove = {-1, -1, -1, -1, '.', '.', false};
             ScrollHistory = 0;
+            showDepthMenu = false;
+            showMainMenu = true;
+            selectedDepth = 3; // default
           }
           if (gameOver && exitButton.getGlobalBounds().contains(mousePos)) {
             window.close();
@@ -398,6 +490,8 @@ int main() {
 
             blackLeftRookMoved = false;
             blackRightRookMoved = false;
+
+            positionCount.clear();
           }
           if (!gameOver && !aiMovePending &&
               !(gameMode == GameMode::PvAI && !whiteTurn) && clickedCol >= 0 &&
@@ -526,6 +620,18 @@ int main() {
                       promotionRow = move.endRow;
                       promotionCol = move.endCol;
                     }
+                    if (move.capturedPiece == 'R') {
+                      if (move.endRow == 7 && move.endCol == 0)
+                        whiteLeftRookMoved = true;
+                      if (move.endRow == 7 && move.endCol == 7)
+                        whiteRightRookMoved = true;
+                    }
+                    if (move.capturedPiece == 'r') {
+                      if (move.endRow == 0 && move.endCol == 0)
+                        blackLeftRookMoved = true;
+                      if (move.endRow == 0 && move.endCol == 7)
+                        blackRightRookMoved = true;
+                    }
 
                     if (castlingMove)
                       castleSound.play();
@@ -568,9 +674,11 @@ int main() {
                       }
                     } else if (isInsufficientMaterial()) {
                       gameOver = true;
-                      gameResult = "Draw by Insufficient Material";
+                      gameResult = "Draw by\nInsufficient Material";
                     }
-
+                    bool givesCheck = isKingInCheck(false);
+                    bool givesMate = givesCheck && !isAnyLegalMove(false);
+                    move.suffix = givesMate ? "#" : (givesCheck ? "+" : "");
                     moveHistory.push_back(move);
                     std::cout << "Evaluation: " << evaluateBoard() << '\n';
                     {
@@ -581,6 +689,15 @@ int main() {
                     selectedRow = -1;
                     selectedCol = -1;
                     clickCount = 0;
+                    std::string pos = "";
+                    for (int r = 0; r < 8; r++)
+                      for (int c = 0; c < 8; c++)
+                        pos += board[r][c];
+                    positionCount[pos]++;
+                    if (positionCount[pos] >= 3) {
+                      gameOver = true;
+                      gameResult = "Draw by Repetition";
+                    }
                   }
                 } else {
 
@@ -603,7 +720,11 @@ int main() {
 
       std::thread([mainBoard = &board, mainEPA = &enPassantAvailable,
                    mainEPR = &enPassantRow, mainEPC = &enPassantCol,
-                   &aiMoveMutex, &aiChosenMove, &aiThinking, &aiMoveReady]() {
+                   wKM = whiteKingMoved, bKM = blackKingMoved,
+                   wLRM = whiteLeftRookMoved, wRRM = whiteRightRookMoved,
+                   bLRM = blackLeftRookMoved, bRRM = blackRightRookMoved,
+                   selectedDepth, &aiMoveMutex, &aiChosenMove, &aiThinking,
+                   &aiMoveReady]() {
         // Copy the main thread board state to this thread
         for (int r = 0; r < 8; ++r) {
           for (int c = 0; c < 8; ++c) {
@@ -614,7 +735,21 @@ int main() {
         enPassantRow = *mainEPR;
         enPassantCol = *mainEPC;
 
-        Move result = getMinimaxMove(false, 5);
+        aiWhiteKingMoved = wKM;
+        aiBlackKingMoved = bKM;
+        aiWhiteLeftRookMoved = wLRM;
+        aiWhiteRightRookMoved = wRRM;
+        aiBlackLeftRookMoved = bLRM;
+        aiBlackRightRookMoved = bRRM;
+
+        int pieceCount = 0;
+        for (int r = 0; r < 8; r++)
+          for (int c = 0; c < 8; c++)
+            if (board[r][c] != '.')
+              pieceCount++;
+
+        int searchDepth = (pieceCount <= 8) ? selectedDepth + 2 : selectedDepth;
+        Move result = getMinimaxMove(false, searchDepth);
 
         std::lock_guard<std::mutex> lock(aiMoveMutex);
         aiChosenMove = result;
@@ -630,6 +765,45 @@ int main() {
       std::lock_guard<std::mutex> lock(aiMoveMutex);
       if (aiChosenMove.startRow != -1) {
         makeMove(aiChosenMove);
+        // castling
+        if (aiChosenMove.capturedPiece == 'R') {
+          if (aiChosenMove.endRow == 7 && aiChosenMove.endCol == 0)
+            whiteLeftRookMoved = true;
+          if (aiChosenMove.endRow == 7 && aiChosenMove.endCol == 7)
+            whiteRightRookMoved = true;
+        }
+        if (aiChosenMove.capturedPiece == 'r') {
+          if (aiChosenMove.endRow == 0 && aiChosenMove.endCol == 0)
+            blackLeftRookMoved = true;
+          if (aiChosenMove.endRow == 0 && aiChosenMove.endCol == 7)
+            blackRightRookMoved = true;
+        }
+        char piece = aiChosenMove.movedPiece;
+        if ((piece == 'K' || piece == 'k') &&
+            std::abs(aiChosenMove.endCol - aiChosenMove.startCol) == 2) {
+          int rookRow = (piece == 'K') ? 7 : 0;
+          char rookPiece = (piece == 'K') ? 'R' : 'r';
+          if (aiChosenMove.endCol == 6) {
+            board[rookRow][5] = rookPiece;
+            board[rookRow][7] = '.';
+            if (piece == 'K')
+              whiteRightRookMoved = true;
+            else
+              blackRightRookMoved = true;
+          } else {
+            board[rookRow][3] = rookPiece;
+            board[rookRow][0] = '.';
+            if (piece == 'K')
+              whiteLeftRookMoved = true;
+            else
+              blackLeftRookMoved = true;
+          }
+          castleSound.play();
+          if (piece == 'K')
+            whiteKingMoved = true;
+          else
+            blackKingMoved = true;
+        }
         if (aiChosenMove.capturedPiece != '.')
           captureSound.play();
         else
@@ -640,8 +814,19 @@ int main() {
         lastEndRow = aiChosenMove.endRow;
         lastEndCol = aiChosenMove.endCol;
         move_made = true;
+        bool givesCheck = isKingInCheck(true);
+        bool givesMate = givesCheck && !isAnyLegalMove(true);
+        aiChosenMove.suffix = givesMate ? "#" : (givesCheck ? "+" : "");
         moveHistory.push_back(aiChosenMove);
-
+        std::string pos = "";
+        for (int r = 0; r < 8; r++)
+          for (int c = 0; c < 8; c++)
+            pos += board[r][c];
+        positionCount[pos]++;
+        if (positionCount[pos] >= 3) {
+          gameOver = true;
+          gameResult = "Draw by Repetition";
+        }
         {
           int tp = ((int)moveHistory.size() + 1) / 2;
           int mv = static_cast<int>(totalGridHeight / 35.f);
@@ -675,18 +860,47 @@ int main() {
       thinkText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
       window.draw(thinkText);
     }
+    sf::Vector2f mousePos = sf::Vector2f(sf::Mouse::getPosition(window));
+    // darken on hover
+    pvpButton.setFillColor(pvpButton.getGlobalBounds().contains(mousePos)
+                               ? sf::Color(160, 125, 65)
+                               : sf::Color(185, 148, 82));
+
+    pvaiButton.setFillColor(pvaiButton.getGlobalBounds().contains(mousePos)
+                                ? sf::Color(160, 125, 65)
+                                : sf::Color(185, 148, 82));
+
     // displayBoard();
     // Main Menu
     if (showMainMenu) {
+      window.draw(menuBackground);
+      window.draw(menuTitle);
       window.draw(pvpButton);
-      window.draw(pvaiButton);
-
       window.draw(pvpText);
+      window.draw(pvaiButton);
       window.draw(pvaiText);
+      window.display();
+      continue;
+    }
+    // depth selector
+    if (showDepthMenu) {
+      window.draw(depthTitle);
+
+      for (int i = 0; i < 5; i++) {
+        if (i + 1 == selectedDepth)
+          depthButtons[i].setFillColor(sf::Color(100, 150, 100));
+        else
+          depthButtons[i].setFillColor(sf::Color(70, 70, 70));
+
+        window.draw(depthButtons[i]);
+        window.draw(depthTexts[i]);
+        window.draw(diffLabels[i]);
+      }
 
       window.display();
       continue;
     }
+
     // Drawing Board
     for (int row = 0; row < 8; row++) {
       for (int col = 0; col < 8; col++) {
@@ -841,7 +1055,7 @@ int main() {
         window.draw(sprite);
       }
     }
-    // Notation
+    // Notation chnaged to totally depend on gameResult from above
     float historyX = offsetX + totalGridWidth + 40.f;
     float historyY = offsetY;
     float lineHeight = 35.f;
@@ -851,10 +1065,12 @@ int main() {
     for (int pair = ScrollHistory; pair < totalPairs; pair++) {
       int i = pair * 2;
 
-      std::string whiteMove = moveToNotation(moveHistory[i]);
+      std::string whiteMove =
+          moveToNotation(moveHistory[i]) + moveHistory[i].suffix;
       std::string blackMove = "";
       if (i + 1 < (int)moveHistory.size())
-        blackMove = moveToNotation(moveHistory[i + 1]);
+        blackMove =
+            moveToNotation(moveHistory[i + 1]) + moveHistory[i + 1].suffix;
 
       std::string line = std::to_string(pair + 1) + ". " + whiteMove;
       while (line.size() < 12)
@@ -869,39 +1085,21 @@ int main() {
           {historyX, historyY + (pair - ScrollHistory) * lineHeight});
       window.draw(text);
     }
-    if (isInsufficientMaterial()) {
+    if (gameOver) {
       sf::Text finalText(font);
       finalText.setCharacterSize(28);
       finalText.setFillColor(sf::Color::Red);
-      finalText.setString("Draw by\nInsufficient Material");
-      sf::FloatRect textBounds = finalText.getLocalBounds();
+      finalText.setString(gameResult);
       finalText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
       window.draw(finalText);
     }
+    sf::Vector2f mousePos2 = sf::Vector2f(sf::Mouse::getPosition(window));
 
-    if (!isAnyLegalMove(whiteTurn)) {
-      sf::Text finalText(font);
-      finalText.setCharacterSize(28);
-      finalText.setFillColor(sf::Color::Red);
+    restartButton.setFillColor(
+        restartButton.getGlobalBounds().contains(mousePos2)
+            ? sf::Color(100, 100, 100)
+            : sf::Color(70, 70, 70));
 
-      if (isKingInCheck(whiteTurn))
-        finalText.setString(whiteTurn ? "CHECKMATE - Black Wins"
-                                      : "CHECKMATE - White Wins");
-      else
-        finalText.setString("Draw by STALEMATE");
-      int maxVisible = static_cast<int>(totalGridHeight / 35.f);
-      int totalPairs = ((int)moveHistory.size() + 1) / 2;
-      int visibleRows = std::min(totalPairs - ScrollHistory, maxVisible);
-
-      float textY = historyY + visibleRows * 35.f + 10.f;
-
-      float maxY = offsetY + totalGridHeight - 40.f;
-      if (textY > maxY)
-        textY = maxY;
-
-      finalText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
-      window.draw(finalText);
-    }
     window.draw(restartButton);
     window.draw(restartText);
     window.display();

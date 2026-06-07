@@ -285,6 +285,9 @@ bool isValidCastling(int startRow, int startCol, int endRow, int endCol,
 
   // short castling
   if (endCol == 6) {
+    char expectedRook = isWhite ? 'R' : 'r';
+    if (board[targetRow][7] != expectedRook)
+      return false;
     bool rookMoved = isWhite ? whiteRightRookMoved : blackRightRookMoved;
     if (!rookMoved && board[targetRow][5] == '.' &&
         board[targetRow][6] == '.') {
@@ -317,6 +320,9 @@ bool isValidCastling(int startRow, int startCol, int endRow, int endCol,
 
   // long castling
   if (endCol == 2) {
+    char expectedRook = isWhite ? 'R' : 'r';
+    if (board[targetRow][0] != expectedRook)
+      return false;
     bool rookMoved = isWhite ? whiteLeftRookMoved : blackLeftRookMoved;
     if (!rookMoved && board[targetRow][1] == '.' &&
         board[targetRow][2] == '.' && board[targetRow][3] == '.') {

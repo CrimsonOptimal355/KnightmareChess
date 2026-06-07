@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-
 thread_local char board[8][8] = {{'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
                                  {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
                                  {'.', '.', '.', '.', '.', '.', '.', '.'},
@@ -43,3 +42,9 @@ extern bool enPassantAvailable = false;
 extern int enPassantRow = -1;
 extern int enPassantCol = -1;
 bool whiteTurn = true;
+bool aiWhiteKingMoved = false;
+bool aiBlackKingMoved = false;
+bool aiWhiteLeftRookMoved = false;
+bool aiWhiteRightRookMoved = false;
+bool aiBlackLeftRookMoved = false;
+bool aiBlackRightRookMoved = false;

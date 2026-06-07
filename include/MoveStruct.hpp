@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+// #include <iostream>
 
 struct Move {
 
@@ -31,4 +33,6 @@ struct Move {
 
   bool prevBlackLeftRookMoved;
   bool prevBlackRightRookMoved;
+
+  std::string suffix; // "+", "#", or ""
 };
