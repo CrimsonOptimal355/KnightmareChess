@@ -52,9 +52,15 @@
 
 ## Screenshots
 
-| Gameplay & Move History | Checkmate Detection | King in Check |
-|---|---|---|
-| ![Gameplay](assets/screenshots/gameplay.png) | ![Checkmate](assets/screenshots/checkmate.png) | ![Check](assets/screenshots/check.png) |
+| Main Menu | Difficulty Selection |
+|---|---|
+| ![Main Menu](assets/screenshots/main_menu.png) | ![Difficulty](assets/screenshots/difficulty.png) |
+| *Choose between Player vs Player or Player vs AI* | *Pick a difficulty from Baby (1) to Expert (5) before the game starts* |
+
+| In-Game with Move History | Checkmate |
+|---|---|
+| ![Gameplay](assets/screenshots/gameplay.png) | ![Checkmate](assets/screenshots/checkmate.png) |
+| *Live board with algebraic move log, last-move highlight, and king-in-check indicator* | *"Black Wins" displayed on checkmate with the full move history on the right* |
 
 ---
 
@@ -151,5 +157,6 @@ Chess.exe
 - Piece textures inspired by classic chess sets
 - Sound effects sourced for chess move/capture/check events
 - Font: [Ubuntu Mono](https://fonts.google.com/specimen/Ubuntu+Mono) (SIL Open Font License)
+
 
 
