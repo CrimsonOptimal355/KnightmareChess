@@ -39,7 +39,7 @@
 | 4 | Hard | May be slow depending on your processor |
 | 5 | Hardest | Can be noticeably slow on weaker processors |
 
-> ⚠️ **Depths 4 and 5 significantly increase computation time.** On slower machines, the AI may take several seconds to respond per move.
+> ⚠️ **Depths 4 and 5 significantly increase computation time.** On slower machines, the AI may take several minutes to respond per move.
 
 ### AI Engine (`ai.cpp` / `ai.hpp`)
 - `evaluateBoard()` — Static board evaluation based on piece values and positioning
