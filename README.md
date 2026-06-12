@@ -132,9 +132,6 @@ cd build
 .\Chess.exe
 ```
 
-> **PowerShell:** Use `.\Chess.exe` (with the `.\` prefix). PowerShell won't run executables from the current directory without it. In CMD, `Chess.exe` alone works fine.
-
----
 
 ## How to Play
 
