@@ -38,9 +38,9 @@ void displayBoard() {
     std::cout << std::endl;
   }
 }
-extern bool enPassantAvailable = false;
-extern int enPassantRow = -1;
-extern int enPassantCol = -1;
+bool enPassantAvailable = false;
+int enPassantRow = -1;
+int enPassantCol = -1;
 bool whiteTurn = true;
 bool aiWhiteKingMoved = false;
 bool aiBlackKingMoved = false;
