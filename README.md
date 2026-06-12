@@ -129,7 +129,7 @@ After building, run the executable from the `build/` folder — assets and DLLs 
 
 ```bash
 cd build
-Chess.exe
+.\Chess.exe
 ```
 
 ---
