@@ -30,7 +30,16 @@
 
 ### Game Modes
 - **Player vs Player (PvP)** — Two players take turns on the same machine
-- **Player vs AI (PvAI)** — Single-player mode against a computer opponent powered by Minimax with alpha-beta pruning
+- **Player vs AI (PvAI)** — Single-player mode against a computer opponent powered by Minimax with alpha-beta pruning. When selecting this mode, you will be prompted to **choose a search depth** (the number of moves the AI looks ahead):
+
+| Depth | Strength | Speed |
+|---|---|---|
+| 1 – 2 | Easy | Very fast |
+| 3 | Medium | Fast |
+| 4 | Hard | May be slow depending on your processor |
+| 5 | Hardest | Can be noticeably slow on weaker processors |
+
+> ⚠️ **Depths 4 and 5 significantly increase computation time.** On slower machines, the AI may take several seconds to respond per move.
 
 ### AI Engine (`ai.cpp` / `ai.hpp`)
 - `evaluateBoard()` — Static board evaluation based on piece values and positioning
@@ -133,6 +142,7 @@ Chess.exe
 - The **king's square turns red** when in check.
 - The game ends automatically on **checkmate** or **stalemate**.
 - On the main menu, choose between **PvP** (two players) or **PvAI** (play against the computer).
+- In **PvAI mode**, you will be asked to select a **search depth** before the game starts. Lower depth = faster AI; higher depth = stronger but slower AI (depth 4–5 can be slow on weaker processors).
 
 ---
 
@@ -141,4 +151,5 @@ Chess.exe
 - Piece textures inspired by classic chess sets
 - Sound effects sourced for chess move/capture/check events
 - Font: [Ubuntu Mono](https://fonts.google.com/specimen/Ubuntu+Mono) (SIL Open Font License)
+
 
