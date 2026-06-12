@@ -222,49 +222,62 @@ int evaluateBoard() {
 //     thinks its winning despite being not able to see loss after this dues
 //     depth
 //         restriction.hece this algo will help to stop at quiet moves
-// int quiescence(int alpha, int beta, bool whiteTurnNow) {
-//   int standPat = evaluateBoard();
+int quiescence(int alpha, int beta, bool whiteTurnNow, int qDepth = 4) {
+  if (qDepth == 0)
+    return evaluateBoard();
+  int standPat = evaluateBoard();
 
-//   if (!whiteTurnNow) {
-//     if (standPat >= beta)
-//       return beta;
+  if (!whiteTurnNow) {
+    if (standPat >= beta)
+      return beta;
 
-//     alpha = std::max(alpha, standPat);
-//   } else {
-//     if (standPat <= alpha)
-//       return alpha;
+    alpha = std::max(alpha, standPat);
+  } else {
+    if (standPat <= alpha)
+      return alpha;
 
-//     beta = std::min(beta, standPat);
-//   }
+    beta = std::min(beta, standPat);
+  }
 
-//   auto moves = getAllLegalMoves(whiteTurnNow);
+  auto moves = getAllLegalMoves(whiteTurnNow);
 
-//   for (auto &m : moves) {
-//     if (m.capturedPiece == '.')
-//       continue;
+  std::sort(moves.begin(), moves.end(), [](const Move &a, const Move &b) {
+    return (pieceValue(a.capturedPiece)) > (pieceValue(b.capturedPiece));
+  });
 
-//     makeMove(m);
-//     int score = quiescence(alpha, beta, !whiteTurnNow);
-//     undoMove(m);
+  for (auto &m : moves) {
+    if (m.capturedPiece == '.')
+      continue;
 
-//     if (!whiteTurnNow) {
-//       alpha = std::max(alpha, score);
-//       if (alpha >= beta)
-//         break;
-//     } else {
-//       beta = std::min(beta, score);
-//       if (alpha >= beta)
-//         break;
-//     }
-//   }
+    // skip if capture not useful
+    int captureVal = pieceValue(m.capturedPiece);
+    if (!whiteTurnNow && standPat + captureVal + 200 < alpha)
+      continue;
+    if (whiteTurnNow && standPat - captureVal - 200 > beta)
+      continue;
 
-//   return whiteTurnNow ? beta : alpha;
-// }
+    makeMove(m);
+    int score = quiescence(alpha, beta, !whiteTurnNow, qDepth - 1);
+    undoMove(m);
+
+    if (!whiteTurnNow) {
+      alpha = std::max(alpha, score);
+      if (alpha >= beta)
+        break;
+    } else {
+      beta = std::min(beta, score);
+      if (alpha >= beta)
+        break;
+    }
+  }
+
+  return whiteTurnNow ? beta : alpha;
+}
 
 int minimax(int depth, bool whiteTurnNow, int alpha, int beta) {
   if (depth == 0)
-    // return quiescence(INT_MIN, INT_MAX, whiteTurnNow);
-    return evaluateBoard();
+    return quiescence(INT_MIN, INT_MAX, whiteTurnNow);
+  // return evaluateBoard();
   if (isInsufficientMaterial())
     return 0;
   std::vector<Move> moves = getAllLegalMoves(whiteTurnNow);

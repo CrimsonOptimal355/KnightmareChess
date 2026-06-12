@@ -267,7 +267,11 @@ int main() {
   std::vector<Move> moveHistory;
   std::vector<sf::Vector2i> legalMoves;
 
-  // Depth selector
+  // Depth background
+  sf::RectangleShape depthBackground(sf::Vector2f(windowWidth, windowHeight));
+  depthBackground.setFillColor(sf::Color(74, 35, 10));
+  depthBackground.setPosition({0.f, 0.f});
+
   sf::RectangleShape depthButtons[5];
   std::vector<sf::Text> depthTexts;
   std::vector<sf::Text> diffLabels;
@@ -276,39 +280,47 @@ int main() {
     depthTexts.emplace_back(font);
     diffLabels.emplace_back(font);
   }
-
+  float totalWidth = 5 * 80.f + 4 * 30.f;
+  float startX = windowWidth / 2.f - totalWidth / 2.f;
+  float buttonY = windowHeight / 2.f - 40.f;
+  std::string labelNames[5] = {"Baby", "Easy", "Medium", "Hard", "Expert"};
   for (int i = 0; i < 5; i++) {
-    depthButtons[i].setSize(sf::Vector2f(80.f, 80.f));
-    depthButtons[i].setFillColor(sf::Color(70, 70, 70));
-    depthButtons[i].setPosition(
-        {windowWidth / 2.f - 220.f + i * 110.f, windowHeight / 2.f - 40.f});
+    float bx = startX + i * 110.f;
 
-    depthTexts[i].setFont(font);
+    depthButtons[i].setSize(sf::Vector2f(80.f, 80.f));
+    depthButtons[i].setFillColor(sf::Color(185, 148, 82));
+    depthButtons[i].setOutlineColor(sf::Color(140, 100, 40));
+    depthButtons[i].setOutlineThickness(2.f);
+    depthButtons[i].setPosition({bx, buttonY});
+
     depthTexts[i].setCharacterSize(36);
     depthTexts[i].setString(std::to_string(i + 1));
-    depthTexts[i].setFillColor(sf::Color::White);
-    depthTexts[i].setPosition(
-        {windowWidth / 2.f - 200.f + i * 110.f, windowHeight / 2.f - 20.f});
+    depthTexts[i].setFillColor(sf::Color(40, 20, 5));
+    depthTexts[i].setStyle(sf::Text::Bold);
+    sf::FloatRect tb = depthTexts[i].getLocalBounds();
+    depthTexts[i].setOrigin(
+        {tb.position.x + tb.size.x / 2.f, tb.position.y + tb.size.y / 2.f});
+    depthTexts[i].setPosition({bx + 40.f, buttonY + 40.f}); // center of button
+
+    // center label under button
+    diffLabels[i].setCharacterSize(20);
+    diffLabels[i].setFillColor(sf::Color(185, 148, 82));
+    diffLabels[i].setString(labelNames[i]);
+    sf::FloatRect lb = diffLabels[i].getLocalBounds();
+    diffLabels[i].setOrigin({lb.position.x + lb.size.x / 2.f, 0.f});
+    diffLabels[i].setPosition({bx + 40.f, buttonY + 90.f}); // below button
   }
 
   // Depth menu title
   sf::Text depthTitle(font);
-  depthTitle.setCharacterSize(36);
-  depthTitle.setFillColor(sf::Color::White);
+  depthTitle.setCharacterSize(42);
+  depthTitle.setFillColor(sf::Color(185, 148, 82));
   depthTitle.setString("Select Difficulty");
-  depthTitle.setPosition(
-      {windowWidth / 2.f - 200.f, windowHeight / 2.f - 120.f});
+  sf::FloatRect titleBounds2 = depthTitle.getLocalBounds();
+  depthTitle.setOrigin({titleBounds2.position.x + titleBounds2.size.x / 2.f,
+                        titleBounds2.position.y + titleBounds2.size.y / 2.f});
+  depthTitle.setPosition({windowWidth / 2.f, buttonY - 80.f});
 
-  // Difficulty labels
-  std::string labelNames[5] = {"Baby", "Easy", "Medium", "Hard", "Expert"};
-  for (int i = 0; i < 5; i++) {
-    diffLabels[i].setFont(font);
-    diffLabels[i].setCharacterSize(18);
-    diffLabels[i].setFillColor(sf::Color(180, 180, 180));
-    diffLabels[i].setString(labelNames[i]);
-    diffLabels[i].setPosition(
-        {windowWidth / 2.f - 220.f + i * 110.f, windowHeight / 2.f + 50.f});
-  }
   while (window.isOpen()) {
     // EVENTS
     while (auto event = window.pollEvent()) {
@@ -432,6 +444,8 @@ int main() {
             blackKingMoved = false;
 
             whiteLeftRookMoved = false;
+            gameOver = false;
+            gameResult = "";
             whiteRightRookMoved = false;
 
             blackLeftRookMoved = false;
@@ -445,7 +459,6 @@ int main() {
             ScrollHistory = 0;
             showDepthMenu = false;
             showMainMenu = true;
-            selectedDepth = 3; // default
           }
           if (gameOver && exitButton.getGlobalBounds().contains(mousePos)) {
             window.close();
@@ -884,13 +897,17 @@ int main() {
     }
     // depth selector
     if (showDepthMenu) {
+      window.draw(depthBackground);
       window.draw(depthTitle);
 
+      sf::Vector2f mousePos = sf::Vector2f(sf::Mouse::getPosition(window));
+
       for (int i = 0; i < 5; i++) {
-        if (i + 1 == selectedDepth)
-          depthButtons[i].setFillColor(sf::Color(100, 150, 100));
+        // Hover effect
+        if (depthButtons[i].getGlobalBounds().contains(mousePos))
+          depthButtons[i].setFillColor(sf::Color(210, 175, 100));
         else
-          depthButtons[i].setFillColor(sf::Color(70, 70, 70));
+          depthButtons[i].setFillColor(sf::Color(185, 148, 82));
 
         window.draw(depthButtons[i]);
         window.draw(depthTexts[i]);
@@ -900,7 +917,6 @@ int main() {
       window.display();
       continue;
     }
-
     // Drawing Board
     for (int row = 0; row < 8; row++) {
       for (int col = 0; col < 8; col++) {
