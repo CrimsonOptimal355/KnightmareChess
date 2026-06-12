@@ -6,3 +6,4 @@ src/build/
 *.obj
 *.o
 .vscode/
+bin/
