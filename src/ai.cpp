@@ -173,25 +173,24 @@ int evaluateBoard() {
       if (p == '.')
         continue;
       int val = pieceValue(p) + positionBonus(p, r, c);
-      if (isBlack(p))
+      if (isBlack(p)) {
         score += val;
-      else
+        blackMaterial += pieceValue(p);
+      } else {
         score -= val;
+        whiteMaterial += pieceValue(p);
+      }
+
+      if (p == 'K') {
+        whiteKingRow = r;
+        whiteKingCol = c;
+      } else if (p == 'k') {
+        blackKingRow = r;
+        blackKingCol = c;
+      }
     }
   // when only king is remianign , push it to cornere
   if (whiteKingRow != -1 && blackKingRow != -1) {
-    int whiteMaterial = 0, blackMaterial = 0;
-    for (int r = 0; r < 8; r++)
-      for (int c = 0; c < 8; c++) {
-        char p = board[r][c];
-        if (p == '.')
-          continue;
-        if (isWhite(p))
-          whiteMaterial += pieceValue(p);
-        else
-          blackMaterial += pieceValue(p);
-      }
-
     int diff = blackMaterial - whiteMaterial;
 
     if (diff > 500) {
@@ -276,13 +275,13 @@ int quiescence(int alpha, int beta, bool whiteTurnNow, int qDepth = 4) {
 
 int minimax(int depth, bool whiteTurnNow, int alpha, int beta) {
   if (depth == 0)
-    return quiescence(INT_MIN, INT_MAX, whiteTurnNow);
+    return quiescence(alpha, beta, whiteTurnNow);
   // return evaluateBoard();
   if (isInsufficientMaterial())
     return 0;
   std::vector<Move> moves = getAllLegalMoves(whiteTurnNow);
   std::sort(moves.begin(), moves.end(), [](const Move &a, const Move &b) {
-    return (a.capturedPiece != '.') > (b.capturedPiece != '.');
+    return pieceValue(a.capturedPiece) > pieceValue(b.capturedPiece);
   });
 
   if (moves.empty()) {
@@ -336,7 +335,7 @@ Move getMinimaxMove(bool forWhite, int depth) {
   if (moves.empty())
     return Move{-1, -1, -1, -1, '.', '.', false};
   std::sort(moves.begin(), moves.end(), [](const Move &a, const Move &b) {
-    return (a.capturedPiece != '.') > (b.capturedPiece != '.');
+    return pieceValue(a.capturedPiece) > pieceValue(b.capturedPiece);
   });
   Move bestMove = moves[0];
   int bestScore = forWhite ? INT_MAX : INT_MIN;
