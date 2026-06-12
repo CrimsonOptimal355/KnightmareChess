@@ -132,6 +132,8 @@ cd build
 .\Chess.exe
 ```
 
+---
+
 
 ## How to Play
 
