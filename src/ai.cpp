@@ -1,6 +1,9 @@
 #include "ai.hpp"
 #include "Board.hpp"
 #include <algorithm>
+#include <atomic>
+
+std::atomic<long long> nodesSearched(0);
 
 std::vector<Move> getAllLegalMoves(bool forWhite) {
   std::vector<Move> moves;
@@ -222,6 +225,7 @@ int evaluateBoard() {
 //     depth
 //         restriction.hece this algo will help to stop at quiet moves
 int quiescence(int alpha, int beta, bool whiteTurnNow, int qDepth = 4) {
+  nodesSearched.fetch_add(1, std::memory_order_relaxed);
   if (qDepth == 0)
     return evaluateBoard();
   int standPat = evaluateBoard();
@@ -274,6 +278,7 @@ int quiescence(int alpha, int beta, bool whiteTurnNow, int qDepth = 4) {
 }
 
 int minimax(int depth, bool whiteTurnNow, int alpha, int beta) {
+  nodesSearched.fetch_add(1, std::memory_order_relaxed);
   if (depth == 0)
     return quiescence(alpha, beta, whiteTurnNow);
   // return evaluateBoard();
@@ -331,6 +336,7 @@ int minimax(int depth, bool whiteTurnNow, int alpha, int beta) {
 }
 
 Move getMinimaxMove(bool forWhite, int depth) {
+  nodesSearched.store(0, std::memory_order_relaxed);
   std::vector<Move> moves = getAllLegalMoves(forWhite);
   if (moves.empty())
     return Move{-1, -1, -1, -1, '.', '.', false};

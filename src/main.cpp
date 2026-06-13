@@ -54,6 +54,11 @@ int main() {
   const float offsetX = (windowWidth - totalGridWidth) / 2.f;
   const float offsetY = (windowHeight - totalGridHeight) / 2.f;
 
+  const float panelWidth = 280.f;
+  const float panelHeight = 500.f;
+  const float panelX = 60;
+  const float panelY = offsetY + (totalGridHeight - panelHeight) / 2.f;
+
   sf::RectangleShape square(sf::Vector2f(tileSize, tileSize));
 
   // From Array to Board
@@ -114,13 +119,24 @@ int main() {
   // Restart Button
   sf::RectangleShape restartButton(sf::Vector2f(180.f, 70.f));
   restartButton.setFillColor(sf::Color(70, 70, 70));
-  restartButton.setPosition({offsetX - 320.f, offsetY + 100.f});
+  restartButton.setPosition({panelX + 30.f, panelY + 395.f});
 
   sf::Text restartText(font);
-  restartText.setCharacterSize(32);
+  restartText.setCharacterSize(28);
   restartText.setFillColor(sf::Color::White);
-  restartText.setString("Restart");
-  restartText.setPosition({offsetX - 285.f, offsetY + 115.f});
+  restartText.setString("Main Menu");
+  restartText.setPosition({panelX + 55.f, panelY + 408.f});
+
+  // New Game Button
+  sf::RectangleShape newGameButton(sf::Vector2f(180.f, 70.f));
+  newGameButton.setFillColor(sf::Color(70, 70, 70));
+  newGameButton.setPosition({panelX + 30.f, panelY + 320.f});
+
+  sf::Text newGameText(font);
+  newGameText.setCharacterSize(28);
+  newGameText.setFillColor(sf::Color::White);
+  newGameText.setString("New Game");
+  newGameText.setPosition({panelX + 65.f, panelY + 333.f});
 
   // MainMenu Backgroung
   sf::RectangleShape menuBackground(sf::Vector2f(windowWidth, windowHeight));
@@ -176,10 +192,10 @@ int main() {
   pvaiText.setPosition({windowWidth / 2.f, windowHeight / 2.f + 75.f});
 
   // Final Result Window
-  sf::RectangleShape gameOverPanel(sf::Vector2f(500.f, 300.f));
+  sf::RectangleShape gameOverPanel(sf::Vector2f(600.f, 220.f));
   gameOverPanel.setFillColor(sf::Color(40, 40, 40, 230));
   gameOverPanel.setPosition(
-      {windowWidth / 2.f - 250.f, windowHeight / 2.f - 150.f});
+      {windowWidth / 2.f - 300.f, windowHeight / 2.f - 110.f});
 
   sf::Text resultText(font);
   resultText.setCharacterSize(50);
@@ -189,25 +205,25 @@ int main() {
   sf::RectangleShape rematchButton(sf::Vector2f(180.f, 70.f));
   rematchButton.setFillColor(sf::Color(70, 70, 70));
   rematchButton.setPosition(
-      {windowWidth / 2.f - 210.f, windowHeight / 2.f + 40.f});
+      {windowWidth / 2.f - 210.f, windowHeight / 2.f + 20.f});
 
   sf::Text rematchText(font);
   rematchText.setCharacterSize(30);
   rematchText.setString("Rematch");
   rematchText.setFillColor(sf::Color::White);
   rematchText.setPosition(
-      {windowWidth / 2.f - 180.f, windowHeight / 2.f + 55.f});
+      {windowWidth / 2.f - 185.f, windowHeight / 2.f + 33.f});
 
   // Exit
   sf::RectangleShape exitButton(sf::Vector2f(180.f, 70.f));
   exitButton.setFillColor(sf::Color(70, 70, 70));
-  exitButton.setPosition({windowWidth / 2.f + 30.f, windowHeight / 2.f + 40.f});
+  exitButton.setPosition({windowWidth / 2.f + 30.f, windowHeight / 2.f + 20.f});
 
   sf::Text exitText(font);
   exitText.setCharacterSize(30);
   exitText.setString("Exit");
   exitText.setFillColor(sf::Color::White);
-  exitText.setPosition({windowWidth / 2.f + 90.f, windowHeight / 2.f + 55.f});
+  exitText.setPosition({windowWidth / 2.f + 90.f, windowHeight / 2.f + 33.f});
 
   // Promotion
   std::unordered_map<char, sf::Texture> texture_promo;
@@ -253,6 +269,8 @@ int main() {
   int ScrollHistory = 0;
   int selectedDepth = 3; // default depth
   bool showDepthMenu = false;
+  long long displayedNPS = 0;
+  long long lastSearchNodes = 0;
 
   // for draw by repetation
   std::map<std::string, int> positionCount;
@@ -260,6 +278,8 @@ int main() {
    hence i will see board after white move and before black move */
   std::atomic<bool> aiMoveReady(false);
   std::atomic<bool> aiThinking(false);
+  std::atomic<int> aiSearchDepth(0);
+  sf::Clock aiTimer;
   Move aiChosenMove = {-1, -1, -1, -1, '.', '.', false};
   std::mutex aiMoveMutex;
   std::string gameResult = "";
@@ -379,6 +399,18 @@ int main() {
                 legalMoves.clear();
                 bool inCheck = isKingInCheck(whiteTurn);
                 bool hasMoves = isAnyLegalMove(whiteTurn);
+                if (!hasMoves) {
+                  gameOver = true;
+                  if (inCheck) {
+                    checkmateSound.play();
+                    gameResult = whiteTurn ? "Black Wins" : "White Wins";
+                  } else {
+                    gameResult = "Draw by StaleMate";
+                  }
+                } else if (isInsufficientMaterial()) {
+                  gameOver = true;
+                  gameResult = "Draw: Insufficient Material";
+                }
 
                 break;
               }
@@ -459,6 +491,53 @@ int main() {
             ScrollHistory = 0;
             showDepthMenu = false;
             showMainMenu = true;
+            displayedNPS = 0;
+            lastSearchNodes = 0;
+            aiSearchDepth = 0;
+            aiTimer.restart();
+          }
+          if (newGameButton.getGlobalBounds().contains(mousePos)) {
+            char resetBoard[8][8] = {{'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+                                     {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+                                     {'.', '.', '.', '.', '.', '.', '.', '.'},
+                                     {'.', '.', '.', '.', '.', '.', '.', '.'},
+                                     {'.', '.', '.', '.', '.', '.', '.', '.'},
+                                     {'.', '.', '.', '.', '.', '.', '.', '.'},
+                                     {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+                                     {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}};
+
+            for (int r = 0; r < 8; r++)
+              for (int c = 0; c < 8; c++)
+                board[r][c] = resetBoard[r][c];
+
+            moveHistory.clear();
+            positionCount.clear();
+
+            whiteTurn = true;
+            gameOver = false;
+            gameResult = "";
+
+            selectedRow = -1;
+            selectedCol = -1;
+            clickCount = 0;
+
+            legalMoves.clear();
+            move_made = false;
+            ScrollHistory = 0;
+            promotionPending = false;
+            whiteKingMoved = false;
+            blackKingMoved = false;
+            whiteLeftRookMoved = false;
+            whiteRightRookMoved = false;
+            blackLeftRookMoved = false;
+            blackRightRookMoved = false;
+            displayedNPS = 0;
+            lastSearchNodes = 0;
+            aiSearchDepth = 0;
+            aiTimer.restart();
+            aiMovePending = false;
+            aiThinking = false;
+            aiMoveReady = false;
           }
           if (gameOver && exitButton.getGlobalBounds().contains(mousePos)) {
             window.close();
@@ -687,7 +766,7 @@ int main() {
                       }
                     } else if (isInsufficientMaterial()) {
                       gameOver = true;
-                      gameResult = "Draw by\nInsufficient Material";
+                      gameResult = "Draw: Insufficient Material";
                     }
                     bool givesCheck = isKingInCheck(false);
                     bool givesMate = givesCheck && !isAnyLegalMove(false);
@@ -730,13 +809,16 @@ int main() {
         !promotionPending && !aiThinking && aiMovePending && !aiMoveReady) {
 
       aiThinking = true;
+      aiTimer.restart();
+      displayedNPS = 0;
 
       std::thread([mainBoard = &board, mainEPA = &enPassantAvailable,
                    mainEPR = &enPassantRow, mainEPC = &enPassantCol,
                    wKM = whiteKingMoved, bKM = blackKingMoved,
                    wLRM = whiteLeftRookMoved, wRRM = whiteRightRookMoved,
                    bLRM = blackLeftRookMoved, bRRM = blackRightRookMoved,
-                   selectedDepth, &aiMoveMutex, &aiChosenMove, &aiThinking,
+                   selectedDepth, &lastSearchNodes, &aiTimer, &displayedNPS,
+                   &aiSearchDepth, &aiMoveMutex, &aiChosenMove, &aiThinking,
                    &aiMoveReady]() {
         // Copy the main thread board state to this thread
         for (int r = 0; r < 8; ++r) {
@@ -762,8 +844,14 @@ int main() {
               pieceCount++;
 
         int searchDepth = (pieceCount <= 8) ? selectedDepth + 2 : selectedDepth;
+        aiSearchDepth.store(searchDepth, std::memory_order_relaxed);
         Move result = getMinimaxMove(false, searchDepth);
 
+        lastSearchNodes = nodesSearched.load();
+        float elapsed = aiTimer.getElapsedTime().asSeconds();
+        if (elapsed > 0.01f) {
+          displayedNPS = static_cast<long long>(lastSearchNodes / elapsed);
+        }
         std::lock_guard<std::mutex> lock(aiMoveMutex);
         aiChosenMove = result;
         aiThinking = false;
@@ -864,15 +952,26 @@ int main() {
       }
     }
     window.clear();
-    // Msg while ai is thinking
-    if (aiThinking) {
-      sf::Text thinkText(font);
-      thinkText.setCharacterSize(28);
-      thinkText.setFillColor(sf::Color::Yellow);
-      thinkText.setString("AI Thinking...");
-      thinkText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
-      window.draw(thinkText);
-    }
+    // // Msg while ai is thinking
+    // if (aiThinking) {
+    //   sf::Text thinkText(font);
+    //   thinkText.setCharacterSize(28);
+    //   thinkText.setFillColor(sf::Color::Yellow);
+    //   thinkText.setString("AI Thinking...");
+    //   thinkText.setPosition({offsetX - 350.f, offsetY + totalGridHeight
+    //   / 2.f}); window.draw(thinkText);
+    //   // depth + nodes searched
+    //   sf::Text statsText(font);
+    //   statsText.setCharacterSize(28);
+    //   statsText.setFillColor(sf::Color::Green);
+    //   std::string statsStr =
+    //       "Depth: " + std::to_string(aiSearchDepth.load()) +
+    //       "   Nodes: " + std::to_string(nodesSearched.load());
+    //   statsText.setString(statsStr);
+    //   statsText.setPosition(
+    //       {offsetX - 350.f, offsetY + totalGridHeight / 2.f + 40.f});
+    //   window.draw(statsText);
+    // }
     sf::Vector2f mousePos = sf::Vector2f(sf::Mouse::getPosition(window));
     // darken on hover
     pvpButton.setFillColor(pvpButton.getGlobalBounds().contains(mousePos)
@@ -1106,8 +1205,8 @@ int main() {
       finalText.setCharacterSize(28);
       finalText.setFillColor(sf::Color::Red);
       finalText.setString(gameResult);
-      finalText.setPosition({offsetX - 350.f, offsetY + totalGridHeight / 2.f});
-      window.draw(finalText);
+      finalText.setPosition({panelX + 20.f, panelY + 280.f});
+      // window.draw(finalText);
     }
     sf::Vector2f mousePos2 = sf::Vector2f(sf::Mouse::getPosition(window));
 
@@ -1116,8 +1215,95 @@ int main() {
             ? sf::Color(100, 100, 100)
             : sf::Color(70, 70, 70));
 
+    // LEFT INFO PANEL
+    sf::RectangleShape leftPanel({panelWidth, 490.f});
+    leftPanel.setPosition({panelX, panelY});
+    leftPanel.setFillColor(sf::Color(35, 35, 35));
+    leftPanel.setOutlineThickness(2.f);
+    leftPanel.setOutlineColor(sf::Color(90, 90, 90));
+    window.draw(leftPanel);
+
+    sf::Text panelTitle(font);
+    panelTitle.setCharacterSize(28);
+    panelTitle.setStyle(sf::Text::Bold);
+    panelTitle.setFillColor(sf::Color::White);
+    panelTitle.setString("KnightmareChess");
+    panelTitle.setPosition({panelX + 20.f, panelY + 15.f});
+    window.draw(panelTitle);
+
+    sf::Text statusText(font);
+    statusText.setCharacterSize(24);
+    statusText.setPosition({panelX + 20.f, panelY + 70.f});
+    if (gameMode == GameMode::PvP) {
+      if (gameOver) {
+        // don't show turn text when game is over
+      } else {
+        statusText.setFillColor(whiteTurn ? sf::Color::White
+                                          : sf::Color(180, 180, 180));
+        statusText.setString(whiteTurn ? "White's Turn" : "Black's Turn");
+        window.draw(statusText);
+      }
+    } else if (gameMode == GameMode::PvAI) {
+      if (!gameOver) {
+        statusText.setFillColor(aiThinking ? sf::Color::Yellow
+                                           : sf::Color::Green);
+        statusText.setString(aiThinking ? "AI Thinking..." : "AI Ready");
+        window.draw(statusText);
+      }
+    }
+
+    sf::Text depthText(font);
+    depthText.setCharacterSize(22);
+    depthText.setFillColor(sf::Color::White);
+    depthText.setString("Depth: " + std::to_string(aiSearchDepth.load()));
+    depthText.setPosition({panelX + 20.f, panelY + 120.f});
+
+    sf::Text nodesText(font);
+    nodesText.setCharacterSize(22);
+    nodesText.setFillColor(sf::Color::White);
+    nodesText.setString("Nodes: " + std::to_string(nodesSearched.load()));
+    nodesText.setPosition({panelX + 20.f, panelY + 160.f});
+
+    sf::Text npsText(font);
+    npsText.setCharacterSize(22);
+    npsText.setFillColor(sf::Color::White);
+    npsText.setString("NPS: " + std::to_string(displayedNPS / 1000) + "K");
+    npsText.setPosition({panelX + 20.f, panelY + 200.f});
+
+    sf::Text searchText(font);
+    searchText.setCharacterSize(22);
+    searchText.setFillColor(sf::Color::White);
+    searchText.setString("Last Search: " + std::to_string(lastSearchNodes));
+    searchText.setPosition({panelX + 20.f, panelY + 240.f});
+
+    if (gameMode == GameMode::PvAI) {
+      window.draw(statusText);
+      window.draw(depthText);
+      window.draw(nodesText);
+      window.draw(npsText);
+      window.draw(searchText);
+    }
+    window.draw(newGameButton);
+    window.draw(newGameText);
+
     window.draw(restartButton);
     window.draw(restartText);
+    if (gameOver) {
+      window.draw(gameOverPanel);
+      resultText.setString(gameResult);
+      resultText.setCharacterSize(40);
+      resultText.setFillColor(sf::Color::White);
+      sf::FloatRect rb = resultText.getLocalBounds();
+      resultText.setOrigin(
+          {rb.position.x + rb.size.x / 2.f, rb.position.y + rb.size.y / 2.f});
+      resultText.setPosition({windowWidth / 2.f, windowHeight / 2.f - 55.f});
+      window.draw(resultText);
+
+      window.draw(rematchButton);
+      window.draw(rematchText);
+      window.draw(exitButton);
+      window.draw(exitText);
+    }
     window.display();
   }
 }
