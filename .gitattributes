@@ -1,2 +1,3 @@
-tools/run-clang-format.py linguist-vendored
-tools/run-clang-tidy.py linguist-vendored
+tools/ linguist-vendored
+external/ linguist-vendored
+src/build.ps1 linguist-vendored
