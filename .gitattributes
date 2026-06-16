@@ -1,1 +1,2 @@
-tools/*.py linguist-vendored
+tools/run-clang-format.py linguist-vendored
+tools/run-clang-tidy.py linguist-vendored
